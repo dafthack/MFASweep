@@ -7,16 +7,17 @@ Currently MFASweep has the ability to login to the following services:
 * Azure Service Management API
 * Microsoft 365 Exchange Web Services
 * Microsoft 365 Web Portal
+* Microsoft 365 Web Portal Using a Mobile User Agent
 * Microsoft 365 Active Sync
 * ADFS
 
-**WARNING: This script attempts to login to the provided account FIVE (5) different times (6 if you include ADFS). If you entered an incorrect password this may lock the account out.**
+**WARNING: This script attempts to login to the provided account SIX (6) different times (7 if you include ADFS). If you entered an incorrect password this may lock the account out.**
 
 ![MFASweep Example](/example.jpg?raw=true)
 
 ## Usage
 
-This command will use the provided credentials and attempt to authenticate to the Microsoft Graph API, Azure Service Management API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal, and Microsoft 365 Active Sync. 
+This command will use the provided credentials and attempt to authenticate to the Microsoft Graph API, Azure Service Management API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal with both a desktop browser and mobile, and Microsoft 365 Active Sync. 
 
 ```PowerShell
 Invoke-MFASweep -Username targetuser@targetdomain.com -Password Winter2020 
@@ -50,6 +51,11 @@ Invoke-EWSAuth -Username targetuser@targetdomain.com -Password Winter2020
 **Microsoft 365 Web Portal**
 ```PowerShell
 Invoke-O365WebPortalAuth -Username targetuser@targetdomain.com -Password Winter2020 
+```
+
+**Microsoft 365 Web Portal w/ Mobile User Agent**
+```PowerShell
+Invoke-O365WebPortalAuthMobile -Username targetuser@targetdomain.com -Password Winter2020 
 ```
 
 **Microsoft 365 Active Sync**
