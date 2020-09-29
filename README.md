@@ -1,5 +1,5 @@
 # MFASweep
-MFASweep is a PowerShell script that attempts to log in to various Microsoft services using a provided set of credentials and will attempt to identify if MFA is enabled. Depending on how conditional access policies and other multi-factor authentication settings are configured some protocols may end up being left single factor.  It also has an additional check for ADFS configurations and can attempt to log in to the on-prem ADFS server if detected.
+MFASweep is a PowerShell script that attempts to log in to various Microsoft services using a provided set of credentials and will attempt to identify if MFA is enabled. Depending on how conditional access policies and other multi-factor authentication settings are configured some protocols may end up being left single factor.  It also has an additional check for ADFS configurations and can attempt to log in to the on-prem ADFS server if detected. 
 
 Currently MFASweep has the ability to login to the following services:
 
@@ -12,6 +12,8 @@ Currently MFASweep has the ability to login to the following services:
 * ADFS
 
 **WARNING: This script attempts to login to the provided account SIX (6) different times (7 if you include ADFS). If you entered an incorrect password this may lock the account out.**
+
+For more information check out the blog post here: [Exploiting MFA Inconsistencies on Microsoft Services](https://www.blackhillsinfosec.com/exploiting-mfa-inconsistencies-on-microsoft-services/) 
 
 ![MFASweep Example](/example.jpg?raw=true)
 
