@@ -6,12 +6,11 @@ Currently MFASweep has the ability to login to the following services:
 * Microsoft Graph API
 * Azure Service Management API
 * Microsoft 365 Exchange Web Services
-* Microsoft 365 Web Portal
-* Microsoft 365 Web Portal Using a Mobile User Agent
+* Microsoft 365 Web Portal w/ 6 device types (Windows, Linux, MacOS, Android Phone, iPhone, Windows Phone)
 * Microsoft 365 Active Sync
 * ADFS
 
-**WARNING: This script attempts to login to the provided account SIX (6) different times (7 if you include ADFS). If you entered an incorrect password this may lock the account out.**
+**WARNING: This script attempts to login to the provided account TEN (10) different times (11 if you include ADFS). If you entered an incorrect password this may lock the account out.**
 
 For more information check out the blog post here: [Exploiting MFA Inconsistencies on Microsoft Services](https://www.blackhillsinfosec.com/exploiting-mfa-inconsistencies-on-microsoft-services/) 
 
