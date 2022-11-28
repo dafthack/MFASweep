@@ -63,7 +63,7 @@ Function Invoke-MFASweep{
     )
 
     Write-Host "---------------- MFASweep ----------------"
-
+    $Tab = [char]9
     if ($Recon -eq $false){
 
         $recontitle = "Microsoft Services Recon"
@@ -115,14 +115,14 @@ Function Invoke-MFASweep{
 
             $adfsoptions = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)
 
-            $adfsresult = $host.ui.PromptForChoice($adfstitle, $adfsmessage, $adfsoptions, 0)
+            $global:adfsresult = $host.ui.PromptForChoice($adfstitle, $adfsmessage, $adfsoptions, 0)
 
-            if ($adfsresult -ne 0)
+            if ($global:adfsresult -ne 0)
             {
                 Write-Host -ForegroundColor Yellow "[*] ADFS authentication is not being performed."
         
             }
-            if ($adfsresult -eq 0){
+            if ($global:adfsresult -eq 0){
                 $IncludeADFS = $True
             }
 
@@ -141,10 +141,10 @@ Function Invoke-MFASweep{
 
 
     $title = "Confirm MFA Sweep"
-    $message = "[*] WARNING: This script is about to attempt logging into the $username account SIX (6) different times (7 if you included ADFS). If you entered an incorrect password this may lock the account out. Are you sure you want to continue?"
+    $message = "[*] WARNING: This script is about to attempt logging into the $username account TEN (10) different times (11 if you included ADFS). If you entered an incorrect password this may lock the account out. Are you sure you want to continue?"
 
     $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", `
-        "Attempts to authenticate 5 times to different Microsoft services."
+        "Attempts to authenticate 10 times to different Microsoft services."
 
     $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No", `
         "Stops the execution of the script."
@@ -159,20 +159,74 @@ Function Invoke-MFASweep{
         break
     }
 
+    $global:graphresult = "NO"
+    $global:smresult = "NO"
+    $global:o365wresult = "NO"
+    $global:o365lresult = "NO"
+    $global:o365mresult = "NO"
+    $global:o365apresult = "NO"
+    $global:o365ipresult = "NO"
+    $global:o365wpresult = "NO"
+    $global:ewsresult = "NO"
+    $global:asyncresult = "NO"
+    $global:adfsresult = "NO"
 
+
+    Write-Output "########################### Microsoft API Checks ###########################"
     Invoke-GraphAPIAuth -Username $Username -Password $Password
     Invoke-AzureManagementAPIAuth -Username $Username -Password $Password
+    Write-Output "############################################################################################################"
+    Write-Host `r`n
+    Write-Output "########################### Microsoft Web Portal User Agent Checks ###########################"
+    Invoke-O365WebPortalAuthWindows -Username $Username -Password $Password
+    Invoke-O365WebPortalAuthLinux -Username $Username -Password $Password
+    Invoke-O365WebPortalAuthMacOS -Username $Username -Password $Password
+    Invoke-O365WebPortalAuthMobileAndroid -Username $Username -Password $Password
+    Invoke-O365WebPortalAuthMobileiPhone -Username $Username -Password $Password
+    Invoke-O365WebPortalAuthMobileWindowsPhone -Username $Username -Password $Password
+    Write-Output "############################################################################################################"
+    Write-Host `r`n
+    Write-Output "########################### Legacy Auth Checks ###########################"
     Invoke-EWSAuth -Username $Username -Password $Password
-    Invoke-O365WebPortalAuth -Username $Username -Password $Password
-    Invoke-O365WebPortalAuthMobile -Username $Username -Password $Password
     Invoke-O365ActiveSyncAuth -Username $Username -Password $Password
+    Write-Output "############################################################################################################"
+    Write-Host `r`n
+    
 
     If($IncludeADFS){
-
+        Write-Output "############################################################################################################"
+        Write-Host `r`n
+        Write-Output "########################### ADFS Check ###########################"
         Invoke-ADFSAuth -Username $Username -Password $Password
 
     }
 
+    Write-Host -ForegroundColor Yellow "######### SINGLE FACTOR ACCESS RESULTS #########"
+    if($global:graphresult -contains "YES"){Write-Host -NoNewLine "Microsoft Graph API $Tab$Tab$Tab|"; Write-Host -ForegroundColor Green " $global:graphresult"}
+    else{Write-Host "Microsoft Graph API $Tab$Tab$Tab| $global:graphresult"}
+    if($global:smresult -contains "YES"){Write-Host -NoNewLine "Microsoft Service Management API $Tab|"; Write-Host -ForegroundColor Green " $global:smresult"}
+    else{Write-Host "Microsoft Service Management API $Tab| $global:smresult"}
+    if($global:o365wresult -contains "YES"){Write-Host -NoNewLine "O365 w/ Windows UA $Tab$Tab$Tab|"; Write-Host -ForegroundColor Green " $global:o365wresult"}
+    else{Write-Host "O365 w/ Windows UA $Tab$Tab$Tab| $global:o365wresult"}
+    if($global:o365lresult -contains "YES"){Write-Host -NoNewLine "O365 w/ Linux UA $Tab$Tab$Tab|"; Write-Host -ForegroundColor Green " $global:o365lresult"}
+    else{Write-Host "O365 w/ Linux UA $Tab$Tab$Tab| $global:o365lresult"}
+    if($global:o365mresult -contains "YES"){Write-Host -NoNewLine "O365 w/ MacOS UA $Tab$Tab$Tab|"; Write-Host -ForegroundColor Green " $global:o365mresult"}
+    else{Write-Host "O365 w/ MacOS UA $Tab$Tab$Tab| $global:o365mresult"}
+    if($global:o365apresult -contains "YES"){Write-Host -NoNewLine "O365 w/ Android UA $Tab$Tab$Tab|"; Write-Host -ForegroundColor Green " $global:o365apresult"}
+    else{Write-Host "O365 w/ Android UA $Tab$Tab$Tab| $global:o365apresult"}
+    if($global:o365ipresult -contains "YES"){Write-Host -NoNewLine "O365 w/ iPhone UA $Tab$Tab$Tab|"; Write-Host -ForegroundColor Green " $global:o365ipresult"}
+    else{Write-Host "O365 w/ iPhone UA $Tab$Tab$Tab| $global:o365ipresult"}
+    if($global:o365wpresult -contains "YES"){Write-Host -NoNewLine "O365 w/ Windows Phone UA $Tab$Tab$Tab|"; Write-Host -ForegroundColor Green " $global:o365wpresult"}
+    else{Write-Host "O365 w/ Windows Phone UA $Tab$Tab| $global:o365wpresult"}
+    if($global:ewsresult -contains "YES"){Write-Host -NoNewLine "Exchange Web Services $Tab$Tab$Tab|"; Write-Host -ForegroundColor Green " $global:ewsresult"}
+    else{Write-Host "Exchange Web Services $Tab$Tab$Tab| $global:ewsresult"}
+    if($global:asyncresult -contains "YES"){Write-Host -NoNewLine "Active Sync $Tab$Tab$Tab|"; Write-Host -ForegroundColor Green " $global:asyncresult"}
+    else{Write-Host "Active Sync $Tab$Tab$Tab$Tab| $global:asyncresult"}
+    
+    If($IncludeADFS){
+    if($glotbal:adfsresult -contains "YES"){Write-Host -NoNewLine "ADFS $Tab$Tab$Tab|"; Write-Host -ForegroundColor Green " $global:adfsresult"}
+    else{Write-Host "ADFS $Tab$Tab| $global:adfsresult"}
+    }
 }
 
 Function Invoke-EWSAuth{
@@ -265,6 +319,7 @@ zL13fBXF+j9+snvSQ0hCOCcECEXKGpIAAZEOoqBGCL33qoSycZcmhxMQO9KVqqKCoBRBUQFRARERbNeK
     $FolderRootConnect = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($service,'MsgFolderRoot')
     Write-Host -ForegroundColor green "[*] SUCCESS! $username was able to authenticate to Microsoft 365 EWS! "
     Write-Host -ForegroundColor DarkGreen "[***] NOTE: MailSniper should work here." 
+    $global:ewsresult = "YES"
     }
     catch
     {
@@ -273,7 +328,7 @@ zL13fBXF+j9+snvSQ0hCOCcECEXKGpIAAZEOoqBGCL33qoSycZcmhxMQO9KVqqKCoBRBUQFRARERbNeK
 
 }
 
-Function Invoke-O365WebPortalAuth{
+Function Invoke-O365WebPortalAuthWindows{
 
     Param(
 
@@ -288,12 +343,12 @@ Function Invoke-O365WebPortalAuth{
     )
     
     Write-Host `r`n
-    Write-Host "---------------- Microsoft 365 Web Portal ----------------"
+    Write-Host "---------------- Microsoft 365 Web Portal w/ Windows User Agent ----------------"
   
 
     Write-Host -ForegroundColor Yellow "[*] Authenticating to Microsoft 365 Web Portal..."
 
-    $SessionRequest = Invoke-WebRequest -Uri 'https://outlook.office365.com' -SessionVariable o365 -UserAgent ([Microsoft.PowerShell.Commands.PSUserAgent]::Chrome)
+    $SessionRequest = Invoke-WebRequest -Uri 'https://outlook.office365.com' -SessionVariable o365 -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.56"
 
     $partialctx = [regex]::Matches($SessionRequest.Content, 'urlLogin":".*?"').Value
     $ctx = [regex]::Matches($partialctx, 'ctx=.*?"').Value -replace 'ctx=' -replace '"'
@@ -321,7 +376,7 @@ Function Invoke-O365WebPortalAuth{
 
     $JSONForm = $Userform | ConvertTo-Json
     
-    $UserNameRequest = Invoke-WebRequest -Uri ("https://login.microsoftonline.com/common/GetCredentialType?mkt=en-US") -WebSession $o365 -Method POST -Body $JSONForm -UserAgent ([Microsoft.PowerShell.Commands.PSUserAgent]::Chrome)
+    $UserNameRequest = Invoke-WebRequest -Uri ("https://login.microsoftonline.com/common/GetCredentialType?mkt=en-US") -WebSession $o365 -Method POST -Body $JSONForm -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.56"
 
 
     $AuthBody = @{i13='0';
@@ -355,7 +410,7 @@ Function Invoke-O365WebPortalAuth{
     i19='198733';
     }
 
-    $AuthRequest = Invoke-WebRequest -Uri ("https://login.microsoftonline.com/common/login") -WebSession $o365 -Method POST -Body $AuthBody -UserAgent ([Microsoft.PowerShell.Commands.PSUserAgent]::Chrome)
+    $AuthRequest = Invoke-WebRequest -Uri ("https://login.microsoftonline.com/common/login") -WebSession $o365 -Method POST -Body $AuthBody -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.56"
 
 
     if ($o365.Cookies.GetCookies("https://login.microsoftonline.com").Name -like "ESTSAUTH")
@@ -363,7 +418,8 @@ Function Invoke-O365WebPortalAuth{
     Write-Host -ForegroundColor Green "[*] SUCCESS! $username was able to authenticate to the Microsoft 365 Web Portal. Checking MFA now..."
         if ($AuthRequest.Content -match "Stay signed in"){
         Write-Host -ForegroundColor Cyan "[**] It appears there is no MFA for this account." 
-        Write-Host -ForegroundColor DarkGreen "[***] NOTE: Login with a web browser to https://outlook.office365.com." 
+        Write-Host -ForegroundColor DarkGreen "[***] NOTE: Login with a Windows-based web browser to https://outlook.office365.com. Ex: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.56" 
+        $global:o365wresult = "YES"
         Foreach ($cookie in $o365.Cookies.GetCookies("https://login.microsoftonline.com")){write-verbose ($cookie.name + " = " + $cookie.value)}
         }
         elseif ($AuthRequest.Content -match "Verify your identity"){
@@ -377,7 +433,7 @@ Function Invoke-O365WebPortalAuth{
 }
 
 
-Function Invoke-O365WebPortalAuthMobile{
+Function Invoke-O365WebPortalAuthMobileAndroid{
 
     Param(
 
@@ -395,7 +451,7 @@ Function Invoke-O365WebPortalAuthMobile{
     Write-Host "---------------- Microsoft 365 Web Portal w/ Mobile User Agent (Android) ----------------"
   
 
-    Write-Host -ForegroundColor Yellow "[*] Authenticating to Microsoft 365 Web Portal using a mobile user agent..."
+    Write-Host -ForegroundColor Yellow "[*] Authenticating to Microsoft 365 Web Portal using a mobile user agent (Android)..."
 
     $SessionRequest = Invoke-WebRequest -Uri 'https://outlook.office365.com' -SessionVariable o365 -UserAgent "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Mobile Safari/537.36"
 
@@ -467,7 +523,436 @@ Function Invoke-O365WebPortalAuthMobile{
     Write-Host -ForegroundColor Green "[*] SUCCESS! $username was able to authenticate to the Microsoft 365 Web Portal. Checking MFA now..."
         if ($AuthRequest.Content -match "Stay signed in"){
         Write-Host -ForegroundColor Cyan "[**] It appears there is no MFA for this account." 
-        Write-Host -ForegroundColor DarkGreen "[***] NOTE: Login with a web browser to https://outlook.office365.com using a mobile user agent." 
+        Write-Host -ForegroundColor DarkGreen "[***] NOTE: Login with a web browser to https://outlook.office365.com using an Android user agent. Ex: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Mobile Safari/537.36" 
+        $global:o365apresult = "YES"
+        Foreach ($cookie in $o365.Cookies.GetCookies("https://login.microsoftonline.com")){write-verbose ($cookie.name + " = " + $cookie.value)}
+        }
+        elseif ($AuthRequest.Content -match "Verify your identity"){
+        Write-Host -ForegroundColor Red "[**] It appears MFA is setup for this account to access Microsoft 365 via the web portal." 
+        Foreach ($cookie in $o365.Cookies.GetCookies("https://login.microsoftonline.com")){write-verbose ($cookie.name + " = " + $cookie.value)}
+        }
+    }
+    else{
+    Write-Host -ForegroundColor red "[*] Login appears to have failed."
+    }
+}
+
+Function Invoke-O365WebPortalAuthMobileiPhone{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    [string]
+    $Username = "",
+
+    [Parameter(Position = 1, Mandatory = $True)]
+    [system.URI]
+    $Password = ""
+    
+    )
+    
+    Write-Host `r`n
+    Write-Host "---------------- Microsoft 365 Web Portal w/ Mobile User Agent (iPhone) ----------------"
+  
+
+    Write-Host -ForegroundColor Yellow "[*] Authenticating to Microsoft 365 Web Portal using a mobile user agent (iPhone)..."
+
+    $SessionRequest = Invoke-WebRequest -Uri 'https://outlook.office365.com' -SessionVariable o365 -UserAgent "Mozilla/5.0 (iPhone; CPU iPhone OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1 Mobile/15E148 Safari/604.1
+"
+
+    $partialctx = [regex]::Matches($SessionRequest.Content, 'urlLogin":".*?"').Value
+    $ctx = [regex]::Matches($partialctx, 'ctx=.*?"').Value -replace 'ctx=' -replace '"'
+    $FlowToken = [regex]::Matches($SessionRequest.Content, 'sFT":".*?"').Value -replace 'sFT":"' -replace '"'
+
+
+    $Userform = @{
+        username = "$username";
+        isOtherIdpSupported = "false";
+        checkPhones = "false";
+        isRemoteNGCSupported = "true";
+        isCookieBannerShown = "false";
+        isFidoSupported = "true";
+        originalRequest = "$ctx";
+        country = "US"; 
+        forceotclogin = "false";
+        isExternalFederationDisallowed = "false";
+        isRemoteConnectSupported = "false";
+        federationFlags = "0";
+        isSignup = "false";
+        flowToken = "$FlowToken";
+        isAccessPassSupported = "true"
+
+    }
+
+    $JSONForm = $Userform | ConvertTo-Json
+    
+    $UserNameRequest = Invoke-WebRequest -Uri ("https://login.microsoftonline.com/common/GetCredentialType?mkt=en-US") -WebSession $o365 -Method POST -Body $JSONForm -UserAgent "Mozilla/5.0 (iPhone; CPU iPhone OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1 Mobile/15E148 Safari/604.1
+"
+
+
+    $AuthBody = @{i13='0';
+    login=$username;
+    loginfmt=$username;
+    type='11';
+    LoginOptions='3';
+    lrt='';
+    lrtPartition='';
+    hisRegion='';
+    hisScaleUnit='';
+    passwd=$password;
+    ps='2';
+    psRNGCDefaultType='';
+    psRNGCEntropy='';
+    psRNGCSLK='';
+    canary='';
+    ctx=$ctx;
+    hpgrequestid='';
+    flowToken=$FlowToken;
+    NewUser='1';
+    FoundMSAs='';
+    fspost='0';
+    i21='0';
+    CookieDisclosure='0';
+    IsFidoSupported='1';
+    isSignupPost='0';
+    i2='1';
+    i17='';
+    i18='';
+    i19='198733';
+    }
+
+    $AuthRequest = Invoke-WebRequest -Uri ("https://login.microsoftonline.com/common/login") -WebSession $o365 -Method POST -Body $AuthBody -UserAgent "Mozilla/5.0 (iPhone; CPU iPhone OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1 Mobile/15E148 Safari/604.1
+"
+
+
+    if ($o365.Cookies.GetCookies("https://login.microsoftonline.com").Name -like "ESTSAUTH")
+    {
+    Write-Host -ForegroundColor Green "[*] SUCCESS! $username was able to authenticate to the Microsoft 365 Web Portal. Checking MFA now..."
+        if ($AuthRequest.Content -match "Stay signed in"){
+        Write-Host -ForegroundColor Cyan "[**] It appears there is no MFA for this account." 
+        Write-Host -ForegroundColor DarkGreen "[***] NOTE: Login with a web browser to https://outlook.office365.com using an iPhone user agent. Ex: Mozilla/5.0 (iPhone; CPU iPhone OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1 Mobile/15E148 Safari/604.1
+"
+        $global:o365ipresult = "YES"
+        Foreach ($cookie in $o365.Cookies.GetCookies("https://login.microsoftonline.com")){write-verbose ($cookie.name + " = " + $cookie.value)}
+        }
+        elseif ($AuthRequest.Content -match "Verify your identity"){
+        Write-Host -ForegroundColor Red "[**] It appears MFA is setup for this account to access Microsoft 365 via the web portal." 
+        Foreach ($cookie in $o365.Cookies.GetCookies("https://login.microsoftonline.com")){write-verbose ($cookie.name + " = " + $cookie.value)}
+        }
+    }
+    else{
+    Write-Host -ForegroundColor red "[*] Login appears to have failed."
+    }
+}
+
+Function Invoke-O365WebPortalAuthLinux{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    [string]
+    $Username = "",
+
+    [Parameter(Position = 1, Mandatory = $True)]
+    [system.URI]
+    $Password = ""
+    
+    )
+    
+    Write-Host `r`n
+    Write-Host "---------------- Microsoft 365 Web Portal w/ Linux User Agent ----------------"
+  
+
+    Write-Host -ForegroundColor Yellow "[*] Authenticating to Microsoft 365 Web Portal using a mobile user agent (iPhone)..."
+
+    $SessionRequest = Invoke-WebRequest -Uri 'https://outlook.office365.com' -SessionVariable o365 -UserAgent "Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:24.0) Gecko/20100101 Firefox/24.0"
+
+    $partialctx = [regex]::Matches($SessionRequest.Content, 'urlLogin":".*?"').Value
+    $ctx = [regex]::Matches($partialctx, 'ctx=.*?"').Value -replace 'ctx=' -replace '"'
+    $FlowToken = [regex]::Matches($SessionRequest.Content, 'sFT":".*?"').Value -replace 'sFT":"' -replace '"'
+
+
+    $Userform = @{
+        username = "$username";
+        isOtherIdpSupported = "false";
+        checkPhones = "false";
+        isRemoteNGCSupported = "true";
+        isCookieBannerShown = "false";
+        isFidoSupported = "true";
+        originalRequest = "$ctx";
+        country = "US"; 
+        forceotclogin = "false";
+        isExternalFederationDisallowed = "false";
+        isRemoteConnectSupported = "false";
+        federationFlags = "0";
+        isSignup = "false";
+        flowToken = "$FlowToken";
+        isAccessPassSupported = "true"
+
+    }
+
+    $JSONForm = $Userform | ConvertTo-Json
+    
+    $UserNameRequest = Invoke-WebRequest -Uri ("https://login.microsoftonline.com/common/GetCredentialType?mkt=en-US") -WebSession $o365 -Method POST -Body $JSONForm -UserAgent "Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:24.0) Gecko/20100101 Firefox/24.0"
+
+
+    $AuthBody = @{i13='0';
+    login=$username;
+    loginfmt=$username;
+    type='11';
+    LoginOptions='3';
+    lrt='';
+    lrtPartition='';
+    hisRegion='';
+    hisScaleUnit='';
+    passwd=$password;
+    ps='2';
+    psRNGCDefaultType='';
+    psRNGCEntropy='';
+    psRNGCSLK='';
+    canary='';
+    ctx=$ctx;
+    hpgrequestid='';
+    flowToken=$FlowToken;
+    NewUser='1';
+    FoundMSAs='';
+    fspost='0';
+    i21='0';
+    CookieDisclosure='0';
+    IsFidoSupported='1';
+    isSignupPost='0';
+    i2='1';
+    i17='';
+    i18='';
+    i19='198733';
+    }
+
+    $AuthRequest = Invoke-WebRequest -Uri ("https://login.microsoftonline.com/common/login") -WebSession $o365 -Method POST -Body $AuthBody -UserAgent "Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:24.0) Gecko/20100101 Firefox/24.0"
+
+
+    if ($o365.Cookies.GetCookies("https://login.microsoftonline.com").Name -like "ESTSAUTH")
+    {
+    Write-Host -ForegroundColor Green "[*] SUCCESS! $username was able to authenticate to the Microsoft 365 Web Portal. Checking MFA now..."
+        if ($AuthRequest.Content -match "Stay signed in"){
+        Write-Host -ForegroundColor Cyan "[**] It appears there is no MFA for this account." 
+        Write-Host -ForegroundColor DarkGreen "[***] NOTE: Login with a web browser to https://outlook.office365.com using a Linux user agent. Ex: Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:24.0) Gecko/20100101 Firefox/24.0" 
+        $global:o365lresult = "YES"
+        Foreach ($cookie in $o365.Cookies.GetCookies("https://login.microsoftonline.com")){write-verbose ($cookie.name + " = " + $cookie.value)}
+        }
+        elseif ($AuthRequest.Content -match "Verify your identity"){
+        Write-Host -ForegroundColor Red "[**] It appears MFA is setup for this account to access Microsoft 365 via the web portal." 
+        Foreach ($cookie in $o365.Cookies.GetCookies("https://login.microsoftonline.com")){write-verbose ($cookie.name + " = " + $cookie.value)}
+        }
+    }
+    else{
+    Write-Host -ForegroundColor red "[*] Login appears to have failed."
+    }
+}
+
+Function Invoke-O365WebPortalAuthMobileWindowsPhone{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    [string]
+    $Username = "",
+
+    [Parameter(Position = 1, Mandatory = $True)]
+    [system.URI]
+    $Password = ""
+    
+    )
+    
+    Write-Host `r`n
+    Write-Host "---------------- Microsoft 365 Web Portal w/ Mobile User Agent (Windows Phone) ----------------"
+  
+
+    Write-Host -ForegroundColor Yellow "[*] Authenticating to Microsoft 365 Web Portal using a mobile user agent (iPhone)..."
+
+    $SessionRequest = Invoke-WebRequest -Uri 'https://outlook.office365.com' -SessionVariable o365 -UserAgent "Mozilla/5.0 (Mobile; Windows Phone 8.1; Android 4.0; ARM; Trident/7.0; Touch; rv:11.0; IEMobile/11.0; NOKIA; Lumia 635) like iPhone OS 7_0_3 Mac OS X AppleWebKit/537 (KHTML, like Gecko) Mobile Safari/537
+"
+
+    $partialctx = [regex]::Matches($SessionRequest.Content, 'urlLogin":".*?"').Value
+    $ctx = [regex]::Matches($partialctx, 'ctx=.*?"').Value -replace 'ctx=' -replace '"'
+    $FlowToken = [regex]::Matches($SessionRequest.Content, 'sFT":".*?"').Value -replace 'sFT":"' -replace '"'
+
+
+    $Userform = @{
+        username = "$username";
+        isOtherIdpSupported = "false";
+        checkPhones = "false";
+        isRemoteNGCSupported = "true";
+        isCookieBannerShown = "false";
+        isFidoSupported = "true";
+        originalRequest = "$ctx";
+        country = "US"; 
+        forceotclogin = "false";
+        isExternalFederationDisallowed = "false";
+        isRemoteConnectSupported = "false";
+        federationFlags = "0";
+        isSignup = "false";
+        flowToken = "$FlowToken";
+        isAccessPassSupported = "true"
+
+    }
+
+    $JSONForm = $Userform | ConvertTo-Json
+    
+    $UserNameRequest = Invoke-WebRequest -Uri ("https://login.microsoftonline.com/common/GetCredentialType?mkt=en-US") -WebSession $o365 -Method POST -Body $JSONForm -UserAgent "Mozilla/5.0 (Mobile; Windows Phone 8.1; Android 4.0; ARM; Trident/7.0; Touch; rv:11.0; IEMobile/11.0; NOKIA; Lumia 635) like iPhone OS 7_0_3 Mac OS X AppleWebKit/537 (KHTML, like Gecko) Mobile Safari/537
+
+"
+
+
+    $AuthBody = @{i13='0';
+    login=$username;
+    loginfmt=$username;
+    type='11';
+    LoginOptions='3';
+    lrt='';
+    lrtPartition='';
+    hisRegion='';
+    hisScaleUnit='';
+    passwd=$password;
+    ps='2';
+    psRNGCDefaultType='';
+    psRNGCEntropy='';
+    psRNGCSLK='';
+    canary='';
+    ctx=$ctx;
+    hpgrequestid='';
+    flowToken=$FlowToken;
+    NewUser='1';
+    FoundMSAs='';
+    fspost='0';
+    i21='0';
+    CookieDisclosure='0';
+    IsFidoSupported='1';
+    isSignupPost='0';
+    i2='1';
+    i17='';
+    i18='';
+    i19='198733';
+    }
+
+    $AuthRequest = Invoke-WebRequest -Uri ("https://login.microsoftonline.com/common/login") -WebSession $o365 -Method POST -Body $AuthBody -UserAgent "Mozilla/5.0 (Mobile; Windows Phone 8.1; Android 4.0; ARM; Trident/7.0; Touch; rv:11.0; IEMobile/11.0; NOKIA; Lumia 635) like iPhone OS 7_0_3 Mac OS X AppleWebKit/537 (KHTML, like Gecko) Mobile Safari/537
+"
+
+
+    if ($o365.Cookies.GetCookies("https://login.microsoftonline.com").Name -like "ESTSAUTH")
+    {
+    Write-Host -ForegroundColor Green "[*] SUCCESS! $username was able to authenticate to the Microsoft 365 Web Portal. Checking MFA now..."
+        if ($AuthRequest.Content -match "Stay signed in"){
+        Write-Host -ForegroundColor Cyan "[**] It appears there is no MFA for this account." 
+        Write-Host -ForegroundColor DarkGreen "[***] NOTE: Login with a web browser to https://outlook.office365.com using an Windows Phone user agent. Ex: Mozilla/5.0 (Mobile; Windows Phone 8.1; Android 4.0; ARM; Trident/7.0; Touch; rv:11.0; IEMobile/11.0; NOKIA; Lumia 635) like iPhone OS 7_0_3 Mac OS X AppleWebKit/537 (KHTML, like Gecko) Mobile Safari/537
+
+"
+        $global:o365wpresult = "YES"
+        Foreach ($cookie in $o365.Cookies.GetCookies("https://login.microsoftonline.com")){write-verbose ($cookie.name + " = " + $cookie.value)}
+        }
+        elseif ($AuthRequest.Content -match "Verify your identity"){
+        Write-Host -ForegroundColor Red "[**] It appears MFA is setup for this account to access Microsoft 365 via the web portal." 
+        Foreach ($cookie in $o365.Cookies.GetCookies("https://login.microsoftonline.com")){write-verbose ($cookie.name + " = " + $cookie.value)}
+        }
+    }
+    else{
+    Write-Host -ForegroundColor red "[*] Login appears to have failed."
+    }
+}
+
+Function Invoke-O365WebPortalAuthMacOS{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    [string]
+    $Username = "",
+
+    [Parameter(Position = 1, Mandatory = $True)]
+    [system.URI]
+    $Password = ""
+    
+    )
+    
+    Write-Host `r`n
+    Write-Host "---------------- Microsoft 365 Web Portal w/ Mac OS User Agent ----------------"
+  
+
+    Write-Host -ForegroundColor Yellow "[*] Authenticating to Microsoft 365 Web Portal using a MacOS User Agent..."
+
+    $SessionRequest = Invoke-WebRequest -Uri 'https://outlook.office365.com' -SessionVariable o365 -UserAgent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1.2 Safari/605.1.15"
+
+    $partialctx = [regex]::Matches($SessionRequest.Content, 'urlLogin":".*?"').Value
+    $ctx = [regex]::Matches($partialctx, 'ctx=.*?"').Value -replace 'ctx=' -replace '"'
+    $FlowToken = [regex]::Matches($SessionRequest.Content, 'sFT":".*?"').Value -replace 'sFT":"' -replace '"'
+
+
+    $Userform = @{
+        username = "$username";
+        isOtherIdpSupported = "false";
+        checkPhones = "false";
+        isRemoteNGCSupported = "true";
+        isCookieBannerShown = "false";
+        isFidoSupported = "true";
+        originalRequest = "$ctx";
+        country = "US"; 
+        forceotclogin = "false";
+        isExternalFederationDisallowed = "false";
+        isRemoteConnectSupported = "false";
+        federationFlags = "0";
+        isSignup = "false";
+        flowToken = "$FlowToken";
+        isAccessPassSupported = "true"
+
+    }
+
+    $JSONForm = $Userform | ConvertTo-Json
+    
+    $UserNameRequest = Invoke-WebRequest -Uri ("https://login.microsoftonline.com/common/GetCredentialType?mkt=en-US") -WebSession $o365 -Method POST -Body $JSONForm -UserAgent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1.2 Safari/605.1.15
+"
+
+
+    $AuthBody = @{i13='0';
+    login=$username;
+    loginfmt=$username;
+    type='11';
+    LoginOptions='3';
+    lrt='';
+    lrtPartition='';
+    hisRegion='';
+    hisScaleUnit='';
+    passwd=$password;
+    ps='2';
+    psRNGCDefaultType='';
+    psRNGCEntropy='';
+    psRNGCSLK='';
+    canary='';
+    ctx=$ctx;
+    hpgrequestid='';
+    flowToken=$FlowToken;
+    NewUser='1';
+    FoundMSAs='';
+    fspost='0';
+    i21='0';
+    CookieDisclosure='0';
+    IsFidoSupported='1';
+    isSignupPost='0';
+    i2='1';
+    i17='';
+    i18='';
+    i19='198733';
+    }
+
+    $AuthRequest = Invoke-WebRequest -Uri ("https://login.microsoftonline.com/common/login") -WebSession $o365 -Method POST -Body $AuthBody -UserAgent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1.2 Safari/605.1.15
+"
+
+
+    if ($o365.Cookies.GetCookies("https://login.microsoftonline.com").Name -like "ESTSAUTH")
+    {
+    Write-Host -ForegroundColor Green "[*] SUCCESS! $username was able to authenticate to the Microsoft 365 Web Portal. Checking MFA now..."
+        if ($AuthRequest.Content -match "Stay signed in"){
+        Write-Host -ForegroundColor Cyan "[**] It appears there is no MFA for this account." 
+        Write-Host -ForegroundColor DarkGreen "[***] NOTE: Login with a web browser to https://outlook.office365.com using an MacOS user agent. Ex: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1.2 Safari/605.1.15" 
+        $global:o365mresult = "YES"
         Foreach ($cookie in $o365.Cookies.GetCookies("https://login.microsoftonline.com")){write-verbose ($cookie.name + " = " + $cookie.value)}
         }
         elseif ($AuthRequest.Content -match "Verify your identity"){
@@ -512,7 +997,8 @@ Function Invoke-GraphAPIAuth{
     # If we get a 200 response code it's a valid cred
     If ($webrequest.StatusCode -eq "200"){
     Write-Host -ForegroundColor "green" "[*] SUCCESS! $username was able to authenticate to the Microsoft Graph API"
-    Write-Host -ForegroundColor DarkGreen "[***] NOTE: The `"MSOnline`" PowerShell module should work here." 
+    Write-Host -ForegroundColor DarkGreen "[***] NOTE: The `"MSOnline`" PowerShell module should work here."
+    $global:graphresult = "YES" 
     Write-Verbose $webrequest.Content
         $webrequest = ""
     }
@@ -610,7 +1096,8 @@ Function Invoke-AzureManagementAPIAuth{
     # If we get a 200 response code it's a valid cred
     If ($webrequest.StatusCode -eq "200"){
     Write-Host -ForegroundColor "green" "[*] SUCCESS! $username was able to authenticate to the Azure Service Management API"
-    Write-Host -ForegroundColor DarkGreen "[***] NOTE: The `"Az`" PowerShell module should work here." 
+    Write-Host -ForegroundColor DarkGreen "[***] NOTE: The `"Az`" PowerShell module should work here."
+    $global:smresult = "YES" 
     Write-Verbose $webrequest.Content
         $webrequest = ""
     }
@@ -717,6 +1204,7 @@ Function Invoke-O365ActiveSyncAuth{
 	    {
 	        Write-Host -ForegroundColor Green "[*] SUCCESS! $username successfully authenticated to O365 ActiveSync."
             Write-Host -ForegroundColor DarkGreen "[***] NOTE: The Windows 10 Mail app can connect to ActiveSync." 	
+            $global:asyncresult = "YES"
 	    }
         else{
             Write-Host -ForegroundColor Red "[*] Login to ActiveSync failed."
@@ -802,7 +1290,8 @@ Function Invoke-ADFSAuth{
         $ADFSSRFAuth = Invoke-WebRequest -Uri "https://login.microsoftonline.com/login.srf" -WebSession $adfsmsonline -Method POST -Body $ADFSAuthAttempt.Forms[0].Fields -UserAgent ([Microsoft.PowerShell.Commands.PSUserAgent]::Chrome) -MaximumRedirection 0 
         
         if ($ADFSSRFAuth.Content -match "Stay signed in"){
-        Write-Host -ForegroundColor Cyan "[**] It appears there is no MFA for this account." 
+        Write-Host -ForegroundColor Cyan "[**] It appears there is no MFA for this account."
+        $global:adfsresult = "YES" 
         Write-Host -ForegroundColor DarkGreen "[***] NOTE: Login with a web browser to $FullADFSURL" 
         Foreach ($cookie in $adfs.Cookies.GetCookies($FullADFSURL)){write-verbose ($cookie.name + " = " + $cookie.value)}
         }
