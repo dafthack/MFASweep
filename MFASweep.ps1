@@ -224,8 +224,8 @@ Function Invoke-MFASweep{
     else{Write-Host "Active Sync $Tab$Tab$Tab$Tab| $global:asyncresult"}
     
     If($IncludeADFS){
-    if($glotbal:adfsresult -contains "YES"){Write-Host -NoNewLine "ADFS $Tab$Tab$Tab|"; Write-Host -ForegroundColor Green " $global:adfsresult"}
-    else{Write-Host "ADFS $Tab$Tab| $global:adfsresult"}
+    if($glotbal:adfsresult -contains "YES"){Write-Host -NoNewLine "ADFS $Tab$Tab$Tab$Tab$Tab|"; Write-Host -ForegroundColor Green " $global:adfsresult"}
+    else{Write-Host "ADFS $Tab$Tab$Tab$Tab$Tab| $global:adfsresult"}
     }
 }
 
