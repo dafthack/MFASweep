@@ -220,12 +220,12 @@ Function Invoke-MFASweep{
     else{Write-Host "O365 w/ Windows Phone UA $Tab$Tab| $global:o365wpresult"}
     if($global:ewsresult -contains "YES"){Write-Host -NoNewLine "Exchange Web Services $Tab$Tab$Tab|"; Write-Host -ForegroundColor Green " $global:ewsresult"}
     else{Write-Host "Exchange Web Services $Tab$Tab$Tab| $global:ewsresult"}
-    if($global:asyncresult -contains "YES"){Write-Host -NoNewLine "Active Sync $Tab$Tab$Tab|"; Write-Host -ForegroundColor Green " $global:asyncresult"}
+    if($global:asyncresult -contains "YES"){Write-Host -NoNewLine "Active Sync $Tab$Tab$Tab$Tab|"; Write-Host -ForegroundColor Green " $global:asyncresult"}
     else{Write-Host "Active Sync $Tab$Tab$Tab$Tab| $global:asyncresult"}
     
     If($IncludeADFS){
-    if($glotbal:adfsresult -contains "YES"){Write-Host -NoNewLine "ADFS $Tab$Tab$Tab|"; Write-Host -ForegroundColor Green " $global:adfsresult"}
-    else{Write-Host "ADFS $Tab$Tab| $global:adfsresult"}
+    if($glotbal:adfsresult -contains "YES"){Write-Host -NoNewLine "ADFS $Tab$Tab$Tab$Tab$Tab|"; Write-Host -ForegroundColor Green " $global:adfsresult"}
+    else{Write-Host "ADFS $Tab$Tab$Tab$Tab$Tab| $global:adfsresult"}
     }
 }
 
