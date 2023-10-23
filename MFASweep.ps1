@@ -767,7 +767,7 @@ Function Invoke-O365WebPortalAuthMobileWindowsPhone{
     Write-Host "---------------- Microsoft 365 Web Portal w/ Mobile User Agent (Windows Phone) ----------------"
   
 
-    Write-Host -ForegroundColor Yellow "[*] Authenticating to Microsoft 365 Web Portal using a mobile user agent (iPhone)..."
+    Write-Host -ForegroundColor Yellow "[*] Authenticating to Microsoft 365 Web Portal using a mobile user agent (Windows Phone)..."
 
     $SessionRequest = Invoke-WebRequest -Uri 'https://outlook.office365.com' -SessionVariable o365 -UserAgent "Mozilla/5.0 (Mobile; Windows Phone 8.1; Android 4.0; ARM; Trident/7.0; Touch; rv:11.0; IEMobile/11.0; NOKIA; Lumia 635) like iPhone OS 7_0_3 Mac OS X AppleWebKit/537 (KHTML, like Gecko) Mobile Safari/537
 "
