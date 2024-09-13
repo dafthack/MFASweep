@@ -70,3 +70,9 @@ Invoke-O365ActiveSyncAuth -Username targetuser@targetdomain.com -Password Winter
 ```PowerShell
 Invoke-ADFSAuth -Username targetuser@targetdomain.com -Password Winter2020 
 ```
+### Brute Forcing Client IDs During ROPC Auth
+The Invoke-BruteClientIDs function will loop through various resource types and client IDs during ROPC auth to find single factor access for various combinations of client IDs and resources.
+
+```PowerShell
+Invoke-BruteClientIDs -Username targetuser@targetdomain.com -Password Winter2024 
+```
