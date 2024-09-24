@@ -20,10 +20,10 @@ For more information check out the blog post here: [Exploiting MFA Inconsistenci
 
 ## Usage
 
-This command will use the provided credentials and attempt to authenticate to the Microsoft Graph API, Azure Service Management API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal with both a desktop browser and mobile, and Microsoft 365 Active Sync. 
+This command will use the provided credentials and attempt to authenticate to the Microsoft Graph API, Azure Service Management API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal with both a desktop browser and mobile, and Microsoft 365 Active Sync. If any authentication methods result in success, tokens and/or cookies will be written to AccessTokens.json. (Currently does not log cookies or tokens for EWS, ActiveSync, and ADFS)
 
 ```PowerShell
-Invoke-MFASweep -Username targetuser@targetdomain.com -Password Winter2020 
+Invoke-MFASweep -Username targetuser@targetdomain.com -Password Winter2024 -WriteTokens 
 ```
 
 This command runs with the default auth methods and checks for ADFS as well.
@@ -71,8 +71,8 @@ Invoke-O365ActiveSyncAuth -Username targetuser@targetdomain.com -Password Winter
 Invoke-ADFSAuth -Username targetuser@targetdomain.com -Password Winter2020 
 ```
 ### Brute Forcing Client IDs During ROPC Auth
-The Invoke-BruteClientIDs function will loop through various resource types and client IDs during ROPC auth to find single factor access for various combinations of client IDs and resources.
+The Invoke-BruteClientIDs function will loop through various resource types and client IDs during ROPC auth to find single factor access for various combinations of client IDs and resources. If any authentication methods result in success, tokens and/or cookies will be written to AccessTokens.json. (Currently does not log cookies or tokens for EWS, ActiveSync, and ADFS)
 
 ```PowerShell
-Invoke-BruteClientIDs -Username targetuser@targetdomain.com -Password Winter2024 
+Invoke-BruteClientIDs -Username targetuser@targetdomain.com -Password Winter2024 -WriteTokens
 ```
