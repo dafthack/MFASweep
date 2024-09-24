@@ -25,6 +25,9 @@ Function Invoke-MFASweep{
 
     .PARAMETER ADFS
     When the ADFS flag is set the script will attempt to login to ADFS in addition to the other Microsoft protocols
+
+    .PARAMETER WriteTokens
+    Use this flag to write any cookies and access/refresh tokens to a file called AccessTokens.json in the current directory. (Currently does not log cookies or tokens for EWS, ActiveSync, and ADFS)
   
     .EXAMPLE
     C:\PS> Invoke-MFASweep -Username targetuser@targetdomain.com -Password Winter2020 
@@ -56,9 +59,13 @@ Function Invoke-MFASweep{
     [Switch]
     $Recon,
 
-    [Parameter(Position = 2, Mandatory = $False)]
+    [Parameter(Position = 3, Mandatory = $False)]
     [Switch]
-    $IncludeADFS
+    $IncludeADFS,
+
+    [Parameter(Position = 4, Mandatory = $False)]
+    [Switch]
+    $WriteTokens
     
     )
 
@@ -173,17 +180,32 @@ Function Invoke-MFASweep{
 
 
     Write-Output "########################### Microsoft API Checks ###########################"
-    Invoke-GraphAPIAuth -Username $Username -Password $Password
-    Invoke-AzureManagementAPIAuth -Username $Username -Password $Password
-    Write-Output "############################################################################################################"
-    Write-Host `r`n
-    Write-Output "########################### Microsoft Web Portal User Agent Checks ###########################"
-    Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Windows
-    Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Linux
-    Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype MacOS
-    Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Android
-    Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype iPhone
-    Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype WindowsPhone
+    if($WriteTokens){
+        Invoke-GraphAPIAuth -Username $Username -Password $Password -WriteTokens
+        Invoke-AzureManagementAPIAuth -Username $Username -Password $Password -WriteTokens
+        Write-Output "############################################################################################################"
+        Write-Host `r`n
+        Write-Output "########################### Microsoft Web Portal User Agent Checks ###########################"
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Windows -WriteTokens
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Linux -WriteTokens
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype MacOS -WriteTokens
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Android -WriteTokens
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype iPhone -WriteTokens
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype WindowsPhone -WriteTokens
+    }
+    else{
+        Invoke-GraphAPIAuth -Username $Username -Password $Password
+        Invoke-AzureManagementAPIAuth -Username $Username -Password $Password
+        Write-Output "############################################################################################################"
+        Write-Host `r`n
+        Write-Output "########################### Microsoft Web Portal User Agent Checks ###########################"
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Windows
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Linux
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype MacOS
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Android
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype iPhone
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype WindowsPhone
+    }
     Write-Output "############################################################################################################"
     Write-Host `r`n
     Write-Output "########################### Legacy Auth Checks ###########################"
@@ -257,7 +279,10 @@ Function Invoke-M365WebPortalAuth{
 
     [Parameter(Position = 3, Mandatory = $False)]
     [system.URI]
-    $UserAgent = ""
+    $UserAgent = "",
+
+    [Parameter(Position = 4, Mandatory = $False)]
+    [switch]$WriteTokens
 
     )
    
@@ -300,9 +325,6 @@ Function Invoke-M365WebPortalAuth{
         }
     }
     Write-Host "---------------- Microsoft 365 Web Portal w/ ($UAtype) User Agent ----------------"
-  
-
-
     Write-Host -ForegroundColor Yellow "[*] Authenticating to Microsoft 365 Web Portal using a ($UAtype) user agent..."
 $SessionRequest = Invoke-WebRequest -Uri 'https://outlook.office365.com' -SessionVariable o365 -UserAgent "$UserAgent"
 
@@ -382,6 +404,9 @@ $Canary = [regex]::Matches($SessionRequest.Content, 'canary":"(.*?)"').Groups[1]
     # Check for the presence of the ESTSAUTH cookie indicating successful authentication
     if ($o365.Cookies.GetCookies("https://login.microsoftonline.com").Name -like "ESTSAUTH") {
         Write-Host -ForegroundColor Green "[*] SUCCESS! $username was able to authenticate to the Microsoft 365 Web Portal. Checking MFA now..."
+         if ($WriteTokens) {
+            Write-CookiesToFile -Cookies $o365.Cookies.GetCookies("https://login.microsoftonline.com") -UserAgent $UserAgent
+        }
 
         # Check the response content to detect MFA
         if ($AuthRequest.Content -match "authMethodId") {
@@ -569,7 +594,10 @@ Function Invoke-GraphAPIAuth{
     $BruteClients,
 
     [Parameter(Position = 4, Mandatory = $False)]
-    [string]$Resource = "https://graph.windows.net"
+    [string]$Resource = "https://graph.windows.net",
+
+    [Parameter(Position = 5, Mandatory = $False)]
+    [switch]$WriteTokens
 
     )
     
@@ -593,16 +621,29 @@ Function Invoke-GraphAPIAuth{
     If ($BruteClients){
         If ($webrequest.StatusCode -eq "200"){
         Write-Host -ForegroundColor "green" "[*] SUCCESS! $username was able to authenticate to $Resource single factor using clientID $ClientId"
+        $responseContent = $webrequest.Content | ConvertFrom-Json
+        $accessToken = $responseContent.access_token
+        $refreshToken = $responseContent.refresh_token
+        if ($WriteTokens) {
+            Write-TokensToFile -WriteTokens:$WriteTokens -Resource $Resource -ClientId $ClientId -AccessToken $accessToken -RefreshToken $refreshToken
+            }
         Write-Host "--------------------------------"
         }
     }else{
     If ($webrequest.StatusCode -eq "200"){
-    Write-Host -ForegroundColor "green" "[*] SUCCESS! $username was able to authenticate to $Resource"
+        Write-Host -ForegroundColor "green" "[*] SUCCESS! $username was able to authenticate to $Resource"
     
-    Write-Host -ForegroundColor DarkGreen "[***] NOTE: The `"MSOnline`" PowerShell module should work here."
-    
-    $global:graphresult = "YES" 
-    Write-Verbose $webrequest.Content
+        $responseContent = $webrequest.Content | ConvertFrom-Json
+        $accessToken = $responseContent.access_token
+        $refreshToken = $responseContent.refresh_token
+
+        Write-Host -ForegroundColor DarkGreen "[***] NOTE: The `"MSOnline`" PowerShell module should work here."
+        
+        if ($WriteTokens) {
+            Write-TokensToFile -WriteTokens:$WriteTokens -Resource $Resource -ClientId $ClientId -AccessToken $accessToken -RefreshToken $refreshToken    
+            }
+        $global:graphresult = "YES" 
+        Write-Verbose $webrequest.Content
         $webrequest = ""
     }
     else{
@@ -680,7 +721,10 @@ Function Invoke-AzureManagementAPIAuth{
 
     [Parameter(Position = 1, Mandatory = $True)]
     [system.URI]
-    $Password = ""
+    $Password = "",
+
+    [Parameter(Position = 2, Mandatory = $False)]
+    [switch]$WriteTokens
     )
     
     Write-Host `r`n
@@ -691,6 +735,8 @@ Function Invoke-AzureManagementAPIAuth{
     $URL = "https://login.microsoftonline.com"
 
     Write-Host -ForegroundColor Yellow "[*] Authenticating to Azure Service Management API..."
+    $resource = "https://management.core.windows.net"
+    $clientid = "1950a258-227b-4e31-a9cf-717495945fc2"
 
     # Setting up the web request
     $BodyParams = @{'resource' = 'https://management.core.windows.net'; 'client_id' = '1950a258-227b-4e31-a9cf-717495945fc2' ; 'grant_type' = 'password' ; 'username' = $username ; 'password' = $password ; 'scope' = 'openid'}
@@ -700,6 +746,12 @@ Function Invoke-AzureManagementAPIAuth{
     # If we get a 200 response code it's a valid cred
     If ($webrequest.StatusCode -eq "200"){
     Write-Host -ForegroundColor "green" "[*] SUCCESS! $username was able to authenticate to the Azure Service Management API"
+        $responseContent = $webrequest.Content | ConvertFrom-Json
+        $accessToken = $responseContent.access_token
+        $refreshToken = $responseContent.refresh_token
+        if ($WriteTokens) {
+            Write-TokensToFile -WriteTokens:$WriteTokens -Resource $Resource -ClientId $ClientId -AccessToken $accessToken -RefreshToken $refreshToken
+            }
     Write-Host -ForegroundColor DarkGreen "[***] NOTE: The `"Az`" PowerShell module should work here."
     $global:smresult = "YES" 
     Write-Verbose $webrequest.Content
@@ -1010,7 +1062,89 @@ Function Invoke-BruteClientIDs {
         Write-Host "[*] Now testing ClientID $ClientID - $AppName"
         foreach ($Endpoint in $ApiEndpoints.Values) {
             #Write-Host "Resource = $Endpoint"
-            Invoke-GraphAPIAuth -Username $Username -Password $Password -ClientID $ClientID -BruteClients -Resource $Endpoint
+            Invoke-GraphAPIAuth -Username $Username -Password $Password -ClientID $ClientID -BruteClients -Resource $Endpoint -WriteTokens
         }
     }
+}
+
+Function Write-TokensToFile {
+    param (
+        [switch]$WriteTokens,
+        [string]$Resource,
+        [string]$ClientId,
+        [string]$AccessToken,
+        [string]$RefreshToken
+    )
+
+    if ($WriteTokens) {
+        $tokenFilePath = "$PSScriptRoot\AccessTokens.json"
+        $currentDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+
+        # Create the new token entry
+        $tokenData = @{
+            "Timestamp"    = $currentDate
+            "Resource"     = $Resource
+            "ClientId"     = $ClientId
+            "AccessToken"  = $AccessToken
+            "RefreshToken" = $RefreshToken
+        }
+
+        # Convert the tokenData to JSON
+        $jsonTokenData = $tokenData | ConvertTo-Json -Depth 100
+
+        # Check if the file exists; if not, create an empty file silently
+        if (!(Test-Path $tokenFilePath)) {
+            New-Item -Path $tokenFilePath -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null
+        }
+
+        # Append the JSON blob to the file
+        Add-Content -Path $tokenFilePath -Value $jsonTokenData
+
+        # Add a newline for clarity between entries
+        Add-Content -Path $tokenFilePath -Value "`n"
+
+        # You can comment or remove this line if you want no output at all
+        Write-Host -ForegroundColor Cyan "[*] Token appended to $tokenFilePath"
+    }
+}
+
+
+Function Write-CookiesToFile {
+    param (
+        [System.Net.CookieCollection]$Cookies,
+        [string]$UserAgent
+    )
+
+    $tokenFilePath = "$PSScriptRoot\AccessTokens.json"
+    $currentDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+
+    # Prepare cookie data
+    $cookieData = @{
+        "Timestamp"  = $currentDate
+        "UserAgent"  = $UserAgent
+        "Cookies"    = @()
+    }
+
+    foreach ($cookie in $Cookies) {
+        $cookieData["Cookies"] += @{
+            "Name"  = $cookie.Name
+            "Value" = $cookie.Value
+        }
+    }
+
+    # Convert the cookie data to JSON
+    $jsonCookieData = $cookieData | ConvertTo-Json -Depth 100
+
+    # Check if the file exists; if not, create an empty file silently
+    if (!(Test-Path $tokenFilePath)) {
+        New-Item -Path $tokenFilePath -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null
+    }
+
+    # Append the JSON blob to the file
+    Add-Content -Path $tokenFilePath -Value $jsonCookieData
+
+    # Add a newline for clarity between entries
+    Add-Content -Path $tokenFilePath -Value "`n"
+
+    Write-Host -ForegroundColor Cyan "[*] Cookies and User Agent appended to $tokenFilePath"
 }
