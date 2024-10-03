@@ -1077,7 +1077,7 @@ Function Write-TokensToFile {
     )
 
     if ($WriteTokens) {
-        $tokenFilePath = "$PSScriptRoot\AccessTokens.json"
+        $tokenFilePath = Join-Path ("$PSScriptRoot" ? "$PSScriptRoot" : ".") "AccessTokens.json"
         $currentDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
         # Create the new token entry
@@ -1115,7 +1115,7 @@ Function Write-CookiesToFile {
         [string]$UserAgent
     )
 
-    $tokenFilePath = "$PSScriptRoot\AccessTokens.json"
+    $tokenFilePath = Join-Path ("$PSScriptRoot" ? "$PSScriptRoot" : ".") "AccessTokens.json"
     $currentDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
     # Prepare cookie data
