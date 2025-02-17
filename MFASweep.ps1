@@ -326,7 +326,7 @@ Function Invoke-M365WebPortalAuth{
     }
     Write-Host "---------------- Microsoft 365 Web Portal w/ ($UAtype) User Agent ----------------"
     Write-Host -ForegroundColor Yellow "[*] Authenticating to Microsoft 365 Web Portal using a ($UAtype) user agent..."
-$SessionRequest = Invoke-WebRequest -Uri 'https://outlook.office365.com' -SessionVariable o365 -UserAgent "$UserAgent"
+$SessionRequest = Invoke-WebRequest -Uri 'https://outlook.office365.com/?authRedirect=true&state=0' -SessionVariable o365 -UserAgent "$UserAgent"
 
 # Extract the 'ctx' value from the response
 $partialctx = [regex]::Matches($SessionRequest.Content, 'urlLogin":".*?"').Value
