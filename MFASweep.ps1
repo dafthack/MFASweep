@@ -573,7 +573,6 @@ zL13fBXF+j9+snvSQ0hCOCcECEXKGpIAAZEOoqBGCL33qoSycZcmhxMQO9KVqqKCoBRBUQFRARERbNeK
 
 
 
-
 Function Invoke-GraphAPIAuth{
     
     Param(
@@ -598,7 +597,10 @@ Function Invoke-GraphAPIAuth{
     [string]$Resource = "https://graph.windows.net",
 
     [Parameter(Position = 5, Mandatory = $False)]
-    [switch]$WriteTokens
+    [switch]$WriteTokens,
+
+    [Parameter(Position = 6, Mandatory = $False)]
+    [switch]$VerboseOut
 
     )
     
@@ -628,6 +630,32 @@ Function Invoke-GraphAPIAuth{
         if ($WriteTokens) {
             Write-TokensToFile -WriteTokens:$WriteTokens -Resource $Resource -ClientId $ClientId -AccessToken $accessToken -RefreshToken $refreshToken
             }
+        if ($verboseout){
+            $parts = $accessToken -split '\.'
+
+            # Decode the payload (second part) from Base64
+            $payload = $parts[1]
+            $padding = switch ($payload.Length % 4) { 
+                2 { '==' }
+                3 { '=' }
+                0 { '' }
+                default { throw "Invalid base64 string length" }
+            }
+            $payload += $padding
+            $decodedPayload = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($payload))
+
+            # Convert the decoded payload from JSON
+            $jwtData = $decodedPayload | ConvertFrom-Json
+
+            # Extract and print the 'aud', 'appid', and 'scp' fields
+            $aud = $jwtData.aud
+            $appid = $jwtData.appid
+            $scp = $jwtData.scp
+
+            Write-Output "Audience (aud): $aud"
+            Write-Output "App ID (appid): $appid"
+            Write-Output "Scope (scp): $scp"
+        }
         Write-Host "--------------------------------"
         }
     }else{
@@ -848,7 +876,7 @@ Function Invoke-O365ActiveSyncAuth{
     $Headers = @{'Authorization' = "Basic $($EncodeUsernamePassword)"}
     
     try {
-	    $easlogin = Invoke-WebRequest -Uri $EASURL -Headers $Headers -Method Get -ErrorAction Stop
+        $easlogin = Invoke-WebRequest -Uri $EASURL -Headers $Headers -Method Get -ErrorAction Stop
         }catch {
             $resp = $_.Exception.Response.GetResponseStream()
             $reader = New-Object System.IO.StreamReader($resp)
@@ -858,11 +886,11 @@ Function Invoke-O365ActiveSyncAuth{
             $StatusCode = $_.Exception.Response.StatusCode.Value__
         }
         if ($StatusCode -eq 505)
-	    {
-	        Write-Host -ForegroundColor Green "[*] SUCCESS! $username successfully authenticated to O365 ActiveSync."
-            Write-Host -ForegroundColor DarkGreen "[***] NOTE: The Windows 10 Mail app can connect to ActiveSync." 	
+        {
+            Write-Host -ForegroundColor Green "[*] SUCCESS! $username successfully authenticated to O365 ActiveSync."
+            Write-Host -ForegroundColor DarkGreen "[***] NOTE: The Windows 10 Mail app can connect to ActiveSync."  
             $global:asyncresult = "YES"
-	    }
+        }
         else{
             Write-Host -ForegroundColor Red "[*] Login to ActiveSync failed."
         }
@@ -1066,15 +1094,59 @@ Function Invoke-BruteClientIDs {
     Param(
         [string]$Username,
         [string]$Password,
-        [array]$ClientIDs = $MSclientIDs
+        [array]$ClientIDs = $MSclientIDs,
+        [string]$ClientIDFilePath = $null,
+        [string]$ApiEndpointsFilePath = $null,
+        [switch]$VerboseOut
     )
 
-    foreach ($ClientID in $ClientIDs) {
-        $AppName = $GuidNames[$ClientID]
-        Write-Host "[*] Now testing ClientID $ClientID - $AppName"
-        foreach ($Endpoint in $ApiEndpoints.Values) {
-            #Write-Host "Resource = $Endpoint"
-            Invoke-GraphAPIAuth -Username $Username -Password $Password -ClientID $ClientID -BruteClients -Resource $Endpoint -WriteTokens
+     if ($ClientIDFilePath -or $ApiEndpointsFilePath) {
+        $data = Load-ClientIDsAndAPIEndpoints -ClientIDFilePath $ClientIDFilePath -ApiEndpointsFilePath $ApiEndpointsFilePath
+        
+        # Override default ClientIDs and API Endpoints if files are passed
+        if ($ClientIDFilePath) {
+            $ClientIDs = $data.ClientIDs
+        } else {
+            $ClientIDs = $MSClientIDs
+        }
+
+        if ($ApiEndpointsFilePath) {
+            $ApiEndpointsList = $data.ApiEndpoints
+        } else {
+            $ApiEndpointsList = $ApiEndpoints.Values
+        }
+    } else {
+        # If no file paths, use hardcoded values
+        $ClientIDs = $MSclientIDs
+        $ApiEndpointsList = $ApiEndpoints.Values
+    }
+    if ($ClientIDFilePath -or $ApiEndpointsFilePath) {
+        foreach ($ClientID in $ClientIDs) {
+            Write-Host "[*] Now testing ClientID $ClientID"
+            foreach ($Endpoint in $ApiEndpointsList) {
+                #Write-Host "Resource = $Endpoint"
+                if($VerboseOut){
+                    Invoke-GraphAPIAuth -Username $Username -Password $Password -ClientID $ClientID -BruteClients -Resource $Endpoint -WriteTokens -VerboseOut
+                }
+                else{
+                    Invoke-GraphAPIAuth -Username $Username -Password $Password -ClientID $ClientID -BruteClients -Resource $Endpoint -WriteTokens
+                }
+            }
+        }
+    }
+    else{
+        foreach ($ClientID in $ClientIDs) {
+            $AppName = $GuidNames[$ClientID]
+            Write-Host "[*] Now testing ClientID $ClientID - $AppName"
+            foreach ($Endpoint in $ApiEndpointsList) {
+                #Write-Host "Resource = $Endpoint"
+                if($VerboseOut){
+                    Invoke-GraphAPIAuth -Username $Username -Password $Password -ClientID $ClientID -BruteClients -Resource $Endpoint -WriteTokens -VerboseOut
+                }
+                else{
+                    Invoke-GraphAPIAuth -Username $Username -Password $Password -ClientID $ClientID -BruteClients -Resource $Endpoint -WriteTokens
+                }
+            }
         }
     }
 }
@@ -1160,3 +1232,29 @@ Function Write-CookiesToFile {
 
     Write-Host -ForegroundColor Cyan "[*] Cookies and User Agent appended to $tokenFilePath"
 }
+
+Function Load-ClientIDsAndAPIEndpoints {
+    Param(
+        [string]$ClientIDFilePath,
+        [string]$ApiEndpointsFilePath
+    )
+    
+    # Load Client IDs from file
+    if (Test-Path $ClientIDFilePath) {
+        $ClientIDs = Get-Content -Path $ClientIDFilePath
+    } else {
+        Write-Host "Client ID file not found at path: $ClientIDFilePath" -ForegroundColor Red
+        return
+    }
+    
+    # Load API Endpoints from file
+    if (Test-Path $ApiEndpointsFilePath) {
+        $ApiEndpoints = Get-Content -Path $ApiEndpointsFilePath
+    } else {
+        Write-Host "API Endpoints file not found at path: $ApiEndpointsFilePath" -ForegroundColor Red
+        return
+    }
+    
+    return @{ClientIDs = $ClientIDs; ApiEndpoints = $ApiEndpoints}
+}
+
