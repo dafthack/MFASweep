@@ -311,13 +311,14 @@ Function Invoke-M365WebPortalAuth{
             $UserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1 Mobile/15E148 Safari/604.1"
         }
         elseif($UAType -eq "Linux"){
-            $UserAgent = "Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:24.0) Gecko/20100101 Firefox/24.0"
+            $UserAgent = "Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:135.0) Gecko/20100101 Firefox/135.0"
         }
         elseif($UAType -eq "WindowsPhone"){
             $UserAgent = "Mozilla/5.0 (Mobile; Windows Phone 8.1; Android 4.0; ARM; Trident/7.0; Touch; rv:11.0; IEMobile/11.0; NOKIA; Lumia 635) like iPhone OS 7_0_3 Mac OS X AppleWebKit/537 (KHTML, like Gecko) Mobile Safari/537"
         }
         elseif($UAType -eq "MacOS"){
-            $UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1.2 Safari/605.1.15"
+            # Intentionally using not the most recent version of Safari as the server side then expects to use seamless SSO for authentication
+            $UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.5 Safari/605.1.15"
         }
         else{
         Write-Host -ForegroundColor Red "[*] Unknown User Agent Type. Try: Windows, Android, iPhone, Linux, WindowsPhone, or MacOS"
@@ -326,7 +327,7 @@ Function Invoke-M365WebPortalAuth{
     }
     Write-Host "---------------- Microsoft 365 Web Portal w/ ($UAtype) User Agent ----------------"
     Write-Host -ForegroundColor Yellow "[*] Authenticating to Microsoft 365 Web Portal using a ($UAtype) user agent..."
-$SessionRequest = Invoke-WebRequest -Uri 'https://outlook.office365.com' -SessionVariable o365 -UserAgent "$UserAgent"
+$SessionRequest = Invoke-WebRequest -Uri 'https://outlook.office365.com/?authRedirect=true&state=0' -SessionVariable o365 -UserAgent "$UserAgent"
 
 # Extract the 'ctx' value from the response
 $partialctx = [regex]::Matches($SessionRequest.Content, 'urlLogin":".*?"').Value
