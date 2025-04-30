@@ -12,7 +12,7 @@ Function Invoke-MFASweep{
     Optional Dependencies: None
   
     .DESCRIPTION
-    This script attempts to login to various Microsoft services using a provided set of credentials. It will attempt to identify where authentication was successful and in some cases where MFA is enabled. By default this script will attempt to login to the Microsoft Graph API, Azure Service Management API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal with both desktop and mobile user agents, and Microsoft 365 Active Sync. It also has an additional check for ADFS configurations and can attempt to login to the on-prem ADFS server if detected.
+    This script attempts to login to various Microsoft services using a provided set of credentials. It will attempt to identify where authentication was successful and in some cases where MFA is enabled. By default this script will attempt to login to the Microsoft Graph API, Azure Resource Manager API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal with both desktop and mobile user agents, and Microsoft 365 Active Sync. It also has an additional check for ADFS configurations and can attempt to login to the on-prem ADFS server if detected.
       
     .PARAMETER Username
     Email Address to use during Authentication
@@ -34,14 +34,14 @@ Function Invoke-MFASweep{
     
     Description
     -----------
-    This command will use the provided credentials and attempt to authenticate to the Microsoft Graph API, Azure Service Management API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal with both desktop and mobile user agents, and Microsoft 365 Active Sync. Prompts for performing recon and authenticating to ADFS will be displayed.
+    This command will use the provided credentials and attempt to authenticate to the Microsoft Graph API, Azure Resource Manager API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal with both desktop and mobile user agents, and Microsoft 365 Active Sync. Prompts for performing recon and authenticating to ADFS will be displayed.
   
     .EXAMPLE
     C:\PS> Invoke-MFASweep -Username targetuser@targetdomain.com -Password Winter2020 -Recon -IncludeADFS
     
     Description
     -----------
-    This command will use the provided credentials and attempt to authenticate to the Microsoft Graph API, Azure Service Management API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal, Microsoft 365 Active Sync and ADFS.
+    This command will use the provided credentials and attempt to authenticate to the Microsoft Graph API, Azure Resource Manager API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal, Microsoft 365 Active Sync and ADFS.
   
 #>
 
@@ -757,13 +757,13 @@ Function Invoke-AzureManagementAPIAuth{
     )
     
     Write-Host `r`n
-    Write-Host "---------------- Azure Service Management API ----------------"
+    Write-Host "---------------- Azure Resource Manager API ----------------"
 
     $ErrorActionPreference = 'silentlycontinue'
 
     $URL = "https://login.microsoftonline.com"
 
-    Write-Host -ForegroundColor Yellow "[*] Authenticating to Azure Service Management API..."
+    Write-Host -ForegroundColor Yellow "[*] Authenticating to Azure Resource Manager API..."
     $resource = "https://management.core.windows.net"
     $clientid = "1950a258-227b-4e31-a9cf-717495945fc2"
 
@@ -774,7 +774,7 @@ Function Invoke-AzureManagementAPIAuth{
 
     # If we get a 200 response code it's a valid cred
     If ($webrequest.StatusCode -eq "200"){
-    Write-Host -ForegroundColor "green" "[*] SUCCESS! $username was able to authenticate to the Azure Service Management API"
+    Write-Host -ForegroundColor "green" "[*] SUCCESS! $username was able to authenticate to the Azure Resource Manager API"
         $responseContent = $webrequest.Content | ConvertFrom-Json
         $accessToken = $responseContent.access_token
         $refreshToken = $responseContent.refresh_token
@@ -812,13 +812,13 @@ Function Invoke-AzureManagementAPIAuth{
             # Microsoft MFA response
         ElseIf(($RespErr -match "AADSTS50079") -or ($RespErr -match "AADSTS50076"))
             {
-            Write-Host -ForegroundColor "green" "[*] SUCCESS! $username was able to authenticate to the Azure Service Management API - NOTE: The response indicates MFA (Microsoft) is in use."
+            Write-Host -ForegroundColor "green" "[*] SUCCESS! $username was able to authenticate to the Azure Resource Manager API - NOTE: The response indicates MFA (Microsoft) is in use."
             }
     
             # Conditional Access response (Based off of limited testing this seems to be the repsonse to DUO MFA)
         ElseIf($RespErr -match "AADSTS50158")
             {
-            Write-Host -ForegroundColor "green" "[*] SUCCESS! $username was able to authenticate to the Azure Service Management API - NOTE: The response indicates conditional access (MFA: DUO or other) is in use."
+            Write-Host -ForegroundColor "green" "[*] SUCCESS! $username was able to authenticate to the Azure Resource Manager API - NOTE: The response indicates conditional access (MFA: DUO or other) is in use."
             }
 
             # Locked out account or Smart Lockout in place
@@ -836,7 +836,7 @@ Function Invoke-AzureManagementAPIAuth{
             # User password is expired
         ElseIf($RespErr -match "AADSTS50055")
             {
-            Write-Host -ForegroundColor "green" "[*] SUCCESS! $username was able to authenticate to the Azure Service Management API - NOTE: The user's password is expired."
+            Write-Host -ForegroundColor "green" "[*] SUCCESS! $username was able to authenticate to the Azure Resource Manager API - NOTE: The user's password is expired."
             }
 
             # Unknown errors
