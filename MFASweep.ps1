@@ -444,12 +444,6 @@ Function Invoke-M365WebPortalAuth{
             Reason = "Post-password KMSI flow reached; synthetic appverify replay failed because Microsoft required browser-only user-context tokens"
         }
     }
-    if ($UAtypeName -eq "iPhone" -and $AuthResult.State -eq "AuthenticatedUnknown" -and $InterruptResult.State -eq "AppVerifyUserContextMissing") {
-        $AuthResult = [pscustomobject]@{
-            State = "SingleFactorSuccess"
-            Reason = "Inferred from iOS CmsiInterrupt flow; appverify replay missing browser-only user-context token"
-        }
-    }
     $HasEstsAuthCookie = $o365.Cookies.GetCookies("https://login.microsoftonline.com").Name -like "ESTSAUTH"
     # Check for either the ESTSAUTH cookie or a recognized post-authentication page
     if ($AuthResult.State -eq "MFARequired") {
@@ -481,9 +475,6 @@ Function Invoke-M365WebPortalAuth{
 
         # MFA was not required during this login session
         Write-Host -ForegroundColor Cyan "[**] It appears there is no MFA required for this account."
-        if ($AuthResult.Reason -match "Inferred from iOS CmsiInterrupt flow") {
-            Write-Host -ForegroundColor DarkYellow "[***] Inference: iOS reached the post-password KMSI flow, and the synthetic appverify replay failed only because browser-only user-context tokens were unavailable."
-        }
         Write-Host -ForegroundColor DarkGreen "[***] NOTE: Login with a web browser to https://outlook.office365.com using a user agent that matches $UAtype. Ex: $UserAgent"
 
         # Mark result for future use
@@ -579,6 +570,12 @@ Function Get-M365WebPortalAuthState{
     if ($Content -match "Stay signed in") {
         $result.State = "SingleFactorSuccess"
         $result.Reason = "Stay signed in prompt detected"
+        return $result
+    }
+
+    if ($Content -match 'PageID"\s+content="KmsiInterrupt"' -or $Content -match '"pgid":"KmsiInterrupt"' -or $Content -match '"urlPost":"/kmsi"') {
+        $result.State = "SingleFactorSuccess"
+        $result.Reason = "KMSI prompt detected"
         return $result
     }
 
@@ -793,12 +790,45 @@ Function Get-M365InterruptConfig{
         UrlPost = $urlPost
         FlowToken = Get-FirstRegexCapture -Content $Content -Patterns @('"sFT":"([^"]+)"', '"flowToken":"([^"]+)"')
         Ctx = Get-FirstRegexCapture -Content $Content -Patterns @('"sCtx":"([^"]+)"', '"ctx":"([^"]+)"')
-        Canary = Get-FirstRegexCapture -Content $Content -Patterns @('"apiCanary":"([^"]+)"', '"canary":"([^"]+)"')
+        Canary = Get-FirstRegexCapture -Content $Content -Patterns @('"canary":"([^"]+)"')
+        ApiCanary = Get-FirstRegexCapture -Content $Content -Patterns @('"apiCanary":"([^"]+)"')
         CorrelationId = Get-FirstRegexCapture -Content $Content -Patterns @('"correlationId":"([^"]+)"')
+        SessionId = Get-FirstRegexCapture -Content $Content -Patterns @('"sessionId":"([^"]+)"')
+        PostUsername = Get-FirstRegexCapture -Content $Content -Patterns @('"sPOST_Username":"([^"]+)"')
         HpgId = Get-FirstRegexCapture -Content $Content -Patterns @('"hpgid":([0-9]+)')
         HpgAct = Get-FirstRegexCapture -Content $Content -Patterns @('"hpgact":([0-9]+)')
         PageId = Get-FirstRegexCapture -Content $Content -Patterns @('"pgid":"([^"]+)"', 'PageID"\s+content="([^"]+)"')
     }
+}
+
+Function Get-WebSessionCookieValue{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    $CookieContainer,
+
+    [Parameter(Position = 1, Mandatory = $True)]
+    [string]
+    $Uri,
+
+    [Parameter(Position = 2, Mandatory = $True)]
+    [string]
+    $Name
+
+    )
+
+    try {
+        foreach ($cookie in $CookieContainer.GetCookies($Uri)) {
+            if ($cookie.Name -eq $Name) {
+                return $cookie.Value
+            }
+        }
+    }
+    catch {
+    }
+
+    return ""
 }
 
 Function Resolve-M365WebPortalInterrupt{
@@ -838,20 +868,30 @@ Function Resolve-M365WebPortalInterrupt{
         return $null
     }
 
+    $sessionContextToken = Get-WebSessionCookieValue -CookieContainer $WebSession.Cookies -Uri 'https://login.microsoftonline.com' -Name 'esctx'
+    $interruptRequestId = if ($InterruptConfig.SessionId) { $InterruptConfig.SessionId } else { $InterruptConfig.CorrelationId }
+
     $InterruptBody = @{
         LoginOptions = '1'
         type = '28'
         ctx = $InterruptConfig.Ctx
-        hpgrequestid = $InterruptConfig.CorrelationId
+        hpgrequestid = $interruptRequestId
         flowToken = $InterruptConfig.FlowToken
         canary = $InterruptConfig.Canary
         i17 = ''
         i18 = ''
         i19 = '0'
     }
+    if ($sessionContextToken) {
+        $InterruptBody.token = $sessionContextToken
+    }
+    if ($InterruptConfig.PostUsername) {
+        $InterruptBody.login = $InterruptConfig.PostUsername
+        $InterruptBody.loginfmt = $InterruptConfig.PostUsername
+    }
 
     $InterruptHeaders = @{
-        'canary' = $InterruptConfig.Canary
+        'canary' = if ($InterruptConfig.ApiCanary) { $InterruptConfig.ApiCanary } else { $InterruptConfig.Canary }
         'client-request-id' = $InterruptConfig.CorrelationId
         'hpgid' = $InterruptConfig.HpgId
         'hpgact' = $InterruptConfig.HpgAct
