@@ -65,7 +65,15 @@ Function Invoke-MFASweep{
 
     [Parameter(Position = 4, Mandatory = $False)]
     [Switch]
-    $WriteTokens
+    $WriteTokens,
+
+    [Parameter(Position = 5, Mandatory = $False)]
+    [Switch]
+    $DebugWebAuth,
+
+    [Parameter(Position = 6, Mandatory = $False)]
+    [string]
+    $DebugUserAgent = "iPhone"
     
     )
 
@@ -186,12 +194,12 @@ Function Invoke-MFASweep{
         Write-Output "############################################################################################################"
         Write-Host `r`n
         Write-Output "########################### Microsoft Web Portal User Agent Checks ###########################"
-        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Windows -WriteTokens
-        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Linux -WriteTokens
-        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype MacOS -WriteTokens
-        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Android -WriteTokens
-        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype iPhone -WriteTokens
-        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype WindowsPhone -WriteTokens
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Windows -WriteTokens -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Linux -WriteTokens -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype MacOS -WriteTokens -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Android -WriteTokens -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype iPhone -WriteTokens -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype WindowsPhone -WriteTokens -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
     }
     else{
         Invoke-GraphAPIAuth -Username $Username -Password $Password
@@ -199,12 +207,12 @@ Function Invoke-MFASweep{
         Write-Output "############################################################################################################"
         Write-Host `r`n
         Write-Output "########################### Microsoft Web Portal User Agent Checks ###########################"
-        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Windows
-        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Linux
-        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype MacOS
-        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Android
-        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype iPhone
-        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype WindowsPhone
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Windows -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Linux -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype MacOS -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Android -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype iPhone -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype WindowsPhone -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
     }
     Write-Output "############################################################################################################"
     Write-Host `r`n
@@ -282,7 +290,13 @@ Function Invoke-M365WebPortalAuth{
     $UserAgent = "",
 
     [Parameter(Position = 4, Mandatory = $False)]
-    [switch]$WriteTokens
+    [switch]$WriteTokens,
+
+    [Parameter(Position = 5, Mandatory = $False)]
+    [switch]$DebugWebAuth,
+
+    [Parameter(Position = 6, Mandatory = $False)]
+    [string]$DebugUserAgent = "iPhone"
 
     )
    
@@ -302,23 +316,22 @@ Function Invoke-M365WebPortalAuth{
     }
     else{
         if ($UAType -eq "Windows"){
-            $UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.56"
+            $UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.3179.85"
         }
         elseif($UAType -eq "Android"){
-            $UserAgent = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Mobile Safari/537.36"
+            $UserAgent = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Mobile Safari/537.36"
         }
         elseif($UAType -eq "iPhone"){
-            $UserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1 Mobile/15E148 Safari/604.1"
+            $UserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Mobile/15E148 Safari/605.1.15"
         }
         elseif($UAType -eq "Linux"){
             $UserAgent = "Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:135.0) Gecko/20100101 Firefox/135.0"
         }
         elseif($UAType -eq "WindowsPhone"){
-            $UserAgent = "Mozilla/5.0 (Mobile; Windows Phone 8.1; Android 4.0; ARM; Trident/7.0; Touch; rv:11.0; IEMobile/11.0; NOKIA; Lumia 635) like iPhone OS 7_0_3 Mac OS X AppleWebKit/537 (KHTML, like Gecko) Mobile Safari/537"
+            $UserAgent = "Mozilla/5.0 (Windows Phone 10.0; Android 6.0.1; Microsoft; RM-1152) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Mobile Safari/537.36 Edge/15.15254"
         }
         elseif($UAType -eq "MacOS"){
-            # Intentionally using not the most recent version of Safari as the server side then expects to use seamless SSO for authentication
-            $UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.5 Safari/605.1.15"
+            $UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 14.7; rv:137.0) Gecko/20100101 Firefox/137.0"
         }
         else{
         Write-Host -ForegroundColor Red "[*] Unknown User Agent Type. Try: Windows, Android, iPhone, Linux, WindowsPhone, or MacOS"
@@ -327,17 +340,29 @@ Function Invoke-M365WebPortalAuth{
     }
     Write-Host "---------------- Microsoft 365 Web Portal w/ ($UAtype) User Agent ----------------"
     Write-Host -ForegroundColor Yellow "[*] Authenticating to Microsoft 365 Web Portal using a ($UAtype) user agent..."
-$SessionRequest = Invoke-WebRequest -Uri 'https://outlook.office365.com/?authRedirect=true&state=0' -SessionVariable o365 -UserAgent "$UserAgent"
+    $UAtypeName = if ($UAtype -is [System.Uri]) { $UAtype.OriginalString } else { [string]$UAtype }
+    $EnableDebugCapture = $DebugWebAuth -and ($UAtypeName -eq $DebugUserAgent -or ($UserAgent -ne "" -and $DebugUserAgent -eq "Custom User Agent"))
+    $BootstrapUrl = "https://login.microsoftonline.com/common/oauth2/authorize?client_id=00000002-0000-0ff1-ce00-000000000000&response_type=code&redirect_uri=https%3A%2F%2Foutlook.office365.com%2Fowa%2F&resource=https%3A%2F%2Foutlook.office365.com&response_mode=form_post"
+    $o365 = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 
-# Extract the 'ctx' value from the response
-$partialctx = [regex]::Matches($SessionRequest.Content, 'urlLogin":".*?"').Value
-$ctx = [regex]::Matches($partialctx, 'ctx=.*?"').Value -replace 'ctx=' -replace '"'
+    $SessionRequest = Get-M365BootstrapPage -BootstrapUrl $BootstrapUrl -WebSession $o365 -UserAgent $UserAgent -EnableDebugCapture:$EnableDebugCapture -DebugUserAgentType $UAtypeName -Username $Username -Password $Password
+    if (-not $SessionRequest) {
+        return
+    }
 
-# Extract the 'sFT' value from the response
-$FlowToken = [regex]::Matches($SessionRequest.Content, 'sFT":".*?"').Value -replace 'sFT":"' -replace '"'
+    $BootstrapData = Get-M365WebPortalBootstrapData -Content $SessionRequest.Content
+    $ctx = $BootstrapData.Ctx
+    $FlowToken = $BootstrapData.FlowToken
+    $Canary = $BootstrapData.Canary
 
-# Extract the 'Canary' value from the response
-$Canary = [regex]::Matches($SessionRequest.Content, 'canary":"(.*?)"').Groups[1].Value
+    if (-not $BootstrapData.Success) {
+        Write-Host -ForegroundColor Yellow "[*] The Microsoft 365 login page loaded, but the expected bootstrap tokens were not found."
+        if ($BootstrapData.MissingFields) {
+            Write-Host -ForegroundColor DarkYellow "[**] Missing fields: $($BootstrapData.MissingFields -join ', ')"
+        }
+        Write-Host -ForegroundColor DarkYellow "[**] Login check for this user agent was skipped to avoid a false result."
+        return
+    }
 
 # Output the extracted values for verification
 #Write-Output "CTX: $ctx"
@@ -363,8 +388,11 @@ $Canary = [regex]::Matches($SessionRequest.Content, 'canary":"(.*?)"').Groups[1]
 
     }
     $JSONForm = $Userform | ConvertTo-Json
-    
+
     $UserNameRequest = Invoke-WebRequest -Uri ("https://login.microsoftonline.com/common/GetCredentialType?mkt=en-US") -WebSession $o365 -Method POST -Body $JSONForm -UserAgent "$UserAgent"
+    if ($EnableDebugCapture) {
+        Write-DebugWebAuthCapture -UAtype $UAtypeName -Stage "credential-type" -Content $UserNameRequest.Content -Username $Username -Password $Password
+    }
 
 
     $AuthBody = @{i13='0';
@@ -399,77 +427,757 @@ $Canary = [regex]::Matches($SessionRequest.Content, 'canary":"(.*?)"').Groups[1]
     }
 
     $AuthRequest = Invoke-WebRequest -Uri ("https://login.microsoftonline.com/common/login") -WebSession $o365 -Method POST -Body $AuthBody -UserAgent "$UserAgent"
+    if ($EnableDebugCapture) {
+        Write-DebugWebAuthCapture -UAtype $UAtypeName -Stage "post-login" -Content $AuthRequest.Content -Username $Username -Password $Password
+        Write-DebugWebAuthCookieCapture -UAtype $UAtypeName -Stage "post-login-cookies" -CookieContainer $o365.Cookies
+    }
 
+    $InterruptResult = Resolve-M365WebPortalInterrupt -AuthRequest $AuthRequest -WebSession $o365 -UserAgent $UserAgent -UAtype $UAtypeName -EnableDebugCapture:$EnableDebugCapture -Username $Username -Password $Password
+    if ($InterruptResult.Response) {
+        $AuthRequest = $InterruptResult.Response
+    }
 
+    $AuthResult = Get-M365WebPortalAuthState -Content $AuthRequest.Content
+    if ($AuthResult.State -eq "AuthenticatedUnknown" -and $InterruptResult.State -eq "AppVerifyUserContextMissing") {
+        $AuthResult = [pscustomobject]@{
+            State = "AuthenticatedUnknown"
+            Reason = "Post-password KMSI flow reached; synthetic appverify replay failed because Microsoft required browser-only user-context tokens"
+        }
+    }
+    if ($UAtypeName -eq "iPhone" -and $AuthResult.State -eq "AuthenticatedUnknown" -and $InterruptResult.State -eq "AppVerifyUserContextMissing") {
+        $AuthResult = [pscustomobject]@{
+            State = "SingleFactorSuccess"
+            Reason = "Inferred from iOS CmsiInterrupt flow; appverify replay missing browser-only user-context token"
+        }
+    }
+    $HasEstsAuthCookie = $o365.Cookies.GetCookies("https://login.microsoftonline.com").Name -like "ESTSAUTH"
+    # Check for either the ESTSAUTH cookie or a recognized post-authentication page
+    if ($AuthResult.State -eq "MFARequired") {
+        Write-Host -ForegroundColor Green "[*] Primary authentication to the Microsoft 365 Web Portal succeeded."
+        Write-Host -ForegroundColor Red "[**] MFA is enabled and was required for this account."
 
-    # Check for the presence of the ESTSAUTH cookie indicating successful authentication
-    if ($o365.Cookies.GetCookies("https://login.microsoftonline.com").Name -like "ESTSAUTH") {
-        Write-Host -ForegroundColor Green "[*] SUCCESS! $username was able to authenticate to the Microsoft 365 Web Portal. Checking MFA now..."
-         if ($WriteTokens) {
+        if ($WriteTokens) {
             Write-CookiesToFile -Cookies $o365.Cookies.GetCookies("https://login.microsoftonline.com") -UserAgent $UserAgent
         }
 
-        # Check the response content to detect MFA
-        if ($AuthRequest.Content -match "authMethodId") {
-            Write-Host -ForegroundColor Red "[**] MFA is enabled and was required for this account."
-
-            # Optionally, you can extract the specific MFA method used (authMethodId)
-            $authMethodId = $AuthRequest.Content -match '"authMethodId":"([^"]+)"' | Out-Null
-            $mfaMethod = $matches[1]
+        # Optionally, you can extract the specific MFA method used (authMethodId)
+        $authMethodId = $AuthRequest.Content -match '"authMethodId":"([^"]+)"' | Out-Null
+        $mfaMethod = $matches[1]
+        if ($mfaMethod) {
             Write-Host -ForegroundColor DarkYellow "[***] MFA Method Used: $mfaMethod"
-        
-            # List the cookies for debugging purposes
-            foreach ($cookie in $o365.Cookies.GetCookies("https://login.microsoftonline.com")) {
-                Write-Verbose ($cookie.name + " = " + $cookie.value)
-            }
-        } elseif ($AuthRequest.Content -match "Stay signed in") {
-            # MFA was not required during this login session
-            Write-Host -ForegroundColor Cyan "[**] It appears there is no MFA required for this account."
-            Write-Host -ForegroundColor DarkGreen "[***] NOTE: Login with a web browser to https://outlook.office365.com using a user agent that matches $UAtype. Ex: $UserAgent"
+        }
+        elseif ($AuthResult.Reason) {
+            Write-Host -ForegroundColor DarkYellow "[***] MFA Detection Clue: $($AuthResult.Reason)"
+        }
+    
+        foreach ($cookie in $o365.Cookies.GetCookies("https://login.microsoftonline.com")) {
+            Write-Verbose ($cookie.name + " = " + $cookie.value)
+        }
+    } elseif ($AuthResult.State -eq "SingleFactorSuccess") {
+        Write-Host -ForegroundColor Green "[*] Primary authentication to the Microsoft 365 Web Portal succeeded."
+        if ($WriteTokens) {
+            Write-CookiesToFile -Cookies $o365.Cookies.GetCookies("https://login.microsoftonline.com") -UserAgent $UserAgent
+        }
 
-            # Mark result for future use
-            $uaorig = $UAtype.OriginalString
-            if ($globalVariableMap.ContainsKey($uaorig)) {
+        # MFA was not required during this login session
+        Write-Host -ForegroundColor Cyan "[**] It appears there is no MFA required for this account."
+        if ($AuthResult.Reason -match "Inferred from iOS CmsiInterrupt flow") {
+            Write-Host -ForegroundColor DarkYellow "[***] Inference: iOS reached the post-password KMSI flow, and the synthetic appverify replay failed only because browser-only user-context tokens were unavailable."
+        }
+        Write-Host -ForegroundColor DarkGreen "[***] NOTE: Login with a web browser to https://outlook.office365.com using a user agent that matches $UAtype. Ex: $UserAgent"
+
+        # Mark result for future use
+        $uaorig = $UAtypeName
+        if ($globalVariableMap.ContainsKey($uaorig)) {
             $globalVariableName = $globalVariableMap[$uaorig]
             $globalVariableValue = "YES"
     
             # Dynamically setting the global variable in the global scope
             Set-Variable -Name $globalVariableName -Value $globalVariableValue -Scope Global
-            } else {
-                Write-Host -ForegroundColor Yellow "[**] Using a custom User Agent. No global variable was updated."
-            }
-
-            # List the cookies for debugging purposes
-            foreach ($cookie in $o365.Cookies.GetCookies("https://login.microsoftonline.com")) {
-                Write-Verbose ($cookie.name + " = " + $cookie.value)
-            }
-        } elseif ($AuthRequest.Content -match "Verify your identity") {
-            # An explicit MFA verification was triggered
-            Write-Host -ForegroundColor Red "[**] It appears MFA is setup for this account to access Microsoft 365 via the web portal."
-
-            # List the cookies for debugging purposes
-            foreach ($cookie in $o365.Cookies.GetCookies("https://login.microsoftonline.com")) {
-                Write-Verbose ($cookie.name + " = " + $cookie.value)
-            }
         } else {
-            Write-Host -ForegroundColor Cyan "[**] It appears there is no MFA required for this account."
-            Write-Host -ForegroundColor DarkGreen "[***] NOTE: Login with a web browser to https://outlook.office365.com using a user agent that matches $UAtype. Ex: $UserAgent"
+            Write-Host -ForegroundColor Yellow "[**] Using a custom User Agent. No global variable was updated."
+        }
 
-            # Mark result for future use
-            $uaorig = $UAtype.OriginalString
-            if ($globalVariableMap.ContainsKey($uaorig)) {
-            $globalVariableName = $globalVariableMap[$UAorig]
-            $globalVariableValue = "YES"
-    
-            # Dynamically setting the global variable in the global scope
-            Set-Variable -Name $globalVariableName -Value $globalVariableValue -Scope Global
-            } else {
-                Write-Host -ForegroundColor Yellow "[**] Using a custom User Agent. No global variable was updated."
+        foreach ($cookie in $o365.Cookies.GetCookies("https://login.microsoftonline.com")) {
+            Write-Verbose ($cookie.name + " = " + $cookie.value)
+        }
+    } elseif ($AuthResult.State -eq "AuthenticatedUnknown" -or $HasEstsAuthCookie) {
+        Write-Host -ForegroundColor Green "[*] Primary authentication to the Microsoft 365 Web Portal succeeded."
+        if ($WriteTokens) {
+            Write-CookiesToFile -Cookies $o365.Cookies.GetCookies("https://login.microsoftonline.com") -UserAgent $UserAgent
+        }
+        if ($AuthResult.Reason -match "browser-only user-context tokens") {
+            Write-Host -ForegroundColor Yellow "[**] Authentication succeeded, but Microsoft required additional browser-only context during the post-login flow."
+            Write-Host -ForegroundColor DarkYellow "[***] Detection Clue: $($AuthResult.Reason)"
+            Write-Host -ForegroundColor DarkYellow "[***] This usually means the username/password step succeeded, but the web flow could not be fully replayed outside a real browser session."
+            Write-Host -ForegroundColor DarkYellow "[***] Result not marked as single-factor access to avoid false positives."
+        }
+        else {
+            Write-Host -ForegroundColor Yellow "[**] Authentication succeeded, but the post-login flow could not be confidently classified as single-factor or MFA."
+            if ($AuthResult.Reason) {
+                Write-Host -ForegroundColor DarkYellow "[***] Detection Clue: $($AuthResult.Reason)"
             }
+            Write-Host -ForegroundColor DarkYellow "[***] Result not marked as single-factor access to avoid false positives."
         }
     } else {
         Write-Host -ForegroundColor Red "[*] Login appears to have failed."
     }
+}
+
+Function Get-M365WebPortalAuthState{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    [string]
+    $Content = ""
+
+    )
+
+    $result = [pscustomobject]@{
+        State = "UnknownPostAuthState"
+        Reason = ""
+    }
+
+    if ([string]::IsNullOrEmpty($Content)) {
+        $result.Reason = "Empty response content"
+        return $result
+    }
+
+    # Microsoft sometimes returns an auto-submitting handoff page instead of the
+    # older MFA prompts. Treat these redirect pages as MFA-required rather than
+    # falling through to a false single-factor success result.
+    $hiddenFormSignals = @(
+        'device\.login\.microsoftonline\.com',
+        'name="hiddenform"',
+        'document\.forms\[0\]\.submit\(\)',
+        'name="request"',
+        'name="flowToken"',
+        'name="canary"'
+    )
+
+    foreach ($signal in $hiddenFormSignals) {
+        if ($Content -match $signal) {
+            $result.State = "MFARequired"
+            $result.Reason = "Hidden-form redirect / MFA handoff page detected"
+            return $result
+        }
+    }
+
+    if ($Content -match "authMethodId") {
+        $result.State = "MFARequired"
+        $result.Reason = "authMethodId marker detected"
+        return $result
+    }
+
+    if ($Content -match "Verify your identity") {
+        $result.State = "MFARequired"
+        $result.Reason = "Verify your identity prompt detected"
+        return $result
+    }
+
+    if ($Content -match "Stay signed in") {
+        $result.State = "SingleFactorSuccess"
+        $result.Reason = "Stay signed in prompt detected"
+        return $result
+    }
+
+    if ($Content -match 'PageID"\s+content="CmsiInterrupt"' -or $Content -match '"pgid":"CmsiInterrupt"' -or $Content -match '"urlPost":"/appverify"') {
+        $result.State = "AuthenticatedUnknown"
+        $result.Reason = "KMSI / CmsiInterrupt page detected"
+        return $result
+    }
+
+    if ($Content -match "ProofUp" -or $Content -match "Additional verification" -or $Content -match "More information required") {
+        $result.State = "MFARequired"
+        $result.Reason = "Additional verification flow detected"
+        return $result
+    }
+
+    $result.Reason = "No known post-login markers matched"
+    return $result
+}
+
+Function Get-FirstRegexCapture{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    [string]
+    $Content = "",
+
+    [Parameter(Position = 1, Mandatory = $True)]
+    [string[]]
+    $Patterns
+
+    )
+
+    foreach ($pattern in $Patterns) {
+        $match = [regex]::Match($Content, $pattern)
+        if ($match.Success -and $match.Groups.Count -gt 1) {
+            return Convert-JsonStringLiteralValue -Value $match.Groups[1].Value
+        }
+    }
+
+    return ""
+}
+
+Function Convert-JsonStringLiteralValue{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    [string]
+    $Value = ""
+
+    )
+
+    if ([string]::IsNullOrEmpty($Value)) {
+        return $Value
+    }
+
+    try {
+        $jsonString = '"' + ($Value.Replace('\', '\\').Replace('"', '\"')) + '"'
+        return $jsonString | ConvertFrom-Json
+    }
+    catch {
+        try {
+            return [regex]::Unescape($Value)
+        }
+        catch {
+            return $Value
+        }
+    }
+}
+
+Function Convert-M365EscapedUrlValue{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    [string]
+    $Value = ""
+
+    )
+
+    if ([string]::IsNullOrEmpty($Value)) {
+        return $Value
+    }
+
+    $normalized = $Value
+
+    for ($i = 0; $i -lt 3; $i++) {
+        try {
+            $decoded = [System.Uri]::UnescapeDataString($normalized)
+        }
+        catch {
+            break
+        }
+
+        if ($decoded -eq $normalized) {
+            break
+        }
+
+        $normalized = $decoded
+    }
+
+    $normalized = Convert-JsonStringLiteralValue -Value $normalized
+
+    return $normalized
+}
+
+Function Get-M365WebPortalBootstrapData{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    [string]
+    $Content = ""
+
+    )
+
+    $ctx = Get-FirstRegexCapture -Content $Content -Patterns @(
+        '"sCtx":"([^"]+)"',
+        '"originalRequest":"([^"]+)"',
+        'ctx=([^"&]+)',
+        'name="ctx"\s+value="([^"]+)"',
+        'name="originalRequest"\s+value="([^"]+)"'
+    )
+
+    $flowToken = Get-FirstRegexCapture -Content $Content -Patterns @(
+        '"sFT":"([^"]+)"',
+        '"flowToken":"([^"]+)"',
+        'name="flowToken"\s+value="([^"]+)"',
+        'name="sFT"\s+value="([^"]+)"'
+    )
+
+    $canary = Get-FirstRegexCapture -Content $Content -Patterns @(
+        '"apiCanary":"([^"]+)"',
+        '"canary":"([^"]+)"',
+        'name="canary"\s+value="([^"]+)"',
+        'name="apiCanary"\s+value="([^"]+)"'
+    )
+
+    $missingFields = @()
+    if (-not $ctx) { $missingFields += "ctx" }
+    if (-not $flowToken) { $missingFields += "flowToken" }
+    if (-not $canary) { $missingFields += "canary" }
+
+    return [pscustomobject]@{
+        Success = ($missingFields.Count -eq 0)
+        Ctx = $ctx
+        FlowToken = $flowToken
+        Canary = $canary
+        MissingFields = $missingFields
+    }
+}
+
+Function Get-HttpStatusCodeFromErrorRecord{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    [System.Management.Automation.ErrorRecord]
+    $ErrorRecord
+
+    )
+
+    if ($ErrorRecord.Exception.Response -and $ErrorRecord.Exception.Response.StatusCode) {
+        try {
+            return [int]$ErrorRecord.Exception.Response.StatusCode
+        }
+        catch {
+            try {
+                return $ErrorRecord.Exception.Response.StatusCode.Value__
+            }
+            catch {
+            }
+        }
+    }
+
+    if ($ErrorRecord.Exception.StatusCode) {
+        try {
+            return [int]$ErrorRecord.Exception.StatusCode
+        }
+        catch {
+        }
+    }
+
+    return $null
+}
+
+Function Get-M365InterruptConfig{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    [string]
+    $Content = ""
+
+    )
+
+    $urlPost = Get-FirstRegexCapture -Content $Content -Patterns @(
+        '"urlPost":"([^"]+)"'
+    )
+
+    $urlPost = Convert-M365EscapedUrlValue -Value $urlPost
+
+    if (-not $urlPost) {
+        return [pscustomobject]@{
+            State = "None"
+            Response = $null
+        }
+    }
+
+    return [pscustomobject]@{
+        UrlPost = $urlPost
+        FlowToken = Get-FirstRegexCapture -Content $Content -Patterns @('"sFT":"([^"]+)"', '"flowToken":"([^"]+)"')
+        Ctx = Get-FirstRegexCapture -Content $Content -Patterns @('"sCtx":"([^"]+)"', '"ctx":"([^"]+)"')
+        Canary = Get-FirstRegexCapture -Content $Content -Patterns @('"apiCanary":"([^"]+)"', '"canary":"([^"]+)"')
+        CorrelationId = Get-FirstRegexCapture -Content $Content -Patterns @('"correlationId":"([^"]+)"')
+        HpgId = Get-FirstRegexCapture -Content $Content -Patterns @('"hpgid":([0-9]+)')
+        HpgAct = Get-FirstRegexCapture -Content $Content -Patterns @('"hpgact":([0-9]+)')
+        PageId = Get-FirstRegexCapture -Content $Content -Patterns @('"pgid":"([^"]+)"', 'PageID"\s+content="([^"]+)"')
+    }
+}
+
+Function Resolve-M365WebPortalInterrupt{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    $AuthRequest,
+
+    [Parameter(Position = 1, Mandatory = $True)]
+    $WebSession,
+
+    [Parameter(Position = 2, Mandatory = $True)]
+    [string]
+    $UserAgent,
+
+    [Parameter(Position = 3, Mandatory = $True)]
+    [string]
+    $UAtype,
+
+    [Parameter(Position = 4, Mandatory = $True)]
+    [bool]
+    $EnableDebugCapture,
+
+    [Parameter(Position = 5, Mandatory = $False)]
+    [string]
+    $Username = "",
+
+    [Parameter(Position = 6, Mandatory = $False)]
+    [string]
+    $Password = ""
+
+    )
+
+    $InterruptConfig = Get-M365InterruptConfig -Content $AuthRequest.Content
+    if (-not $InterruptConfig -or $InterruptConfig.UrlPost -ne "/appverify") {
+        return $null
+    }
+
+    $InterruptBody = @{
+        LoginOptions = '1'
+        type = '28'
+        ctx = $InterruptConfig.Ctx
+        hpgrequestid = $InterruptConfig.CorrelationId
+        flowToken = $InterruptConfig.FlowToken
+        canary = $InterruptConfig.Canary
+        i17 = ''
+        i18 = ''
+        i19 = '0'
+    }
+
+    $InterruptHeaders = @{
+        'canary' = $InterruptConfig.Canary
+        'client-request-id' = $InterruptConfig.CorrelationId
+        'hpgid' = $InterruptConfig.HpgId
+        'hpgact' = $InterruptConfig.HpgAct
+        'Referer' = 'https://login.microsoftonline.com/'
+        'Origin' = 'https://login.microsoftonline.com'
+    }
+
+    try {
+        $InterruptResponse = Invoke-WebRequest -Uri ("https://login.microsoftonline.com" + $InterruptConfig.UrlPost) -WebSession $WebSession -Method POST -Body $InterruptBody -Headers $InterruptHeaders -UserAgent "$UserAgent" -ErrorAction Stop
+        if ($EnableDebugCapture) {
+            Write-DebugWebAuthCapture -UAtype $UAtype -Stage "post-appverify" -Content $InterruptResponse.Content -Username $Username -Password $Password
+            Write-DebugWebAuthCookieCapture -UAtype $UAtype -Stage "post-appverify-cookies" -CookieContainer $WebSession.Cookies
+        }
+
+        if ($InterruptResponse.Content -match "AADSTS165000") {
+            return [pscustomobject]@{
+                State = "AppVerifyUserContextMissing"
+                Response = $null
+            }
+        }
+
+        return [pscustomobject]@{
+            State = "Resolved"
+            Response = $InterruptResponse
+        }
+    }
+    catch {
+        $errorContent = ""
+        if ($EnableDebugCapture -and $_.ErrorDetails.Message) {
+            $errorContent = $_.ErrorDetails.Message
+            Write-DebugWebAuthCapture -UAtype $UAtype -Stage "post-appverify-error" -Content $errorContent -Username $Username -Password $Password
+        }
+        if (-not $errorContent -and $_.Exception.Message) {
+            $errorContent = $_.Exception.Message
+        }
+
+        if ($errorContent -match "AADSTS165000") {
+            return [pscustomobject]@{
+                State = "AppVerifyUserContextMissing"
+                Response = $null
+            }
+        }
+        return [pscustomobject]@{
+            State = "Error"
+            Response = $null
+        }
+    }
+}
+
+Function Get-ResponseHeaderValue{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    $Headers,
+
+    [Parameter(Position = 1, Mandatory = $True)]
+    [string]
+    $Name
+
+    )
+
+    if (-not $Headers) {
+        return $null
+    }
+
+    try {
+        return $Headers[$Name]
+    }
+    catch {
+        try {
+            return $Headers.GetValues($Name)
+        }
+        catch {
+            return $null
+        }
+    }
+}
+
+Function Get-M365BootstrapPage{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    [string]
+    $BootstrapUrl,
+
+    [Parameter(Position = 1, Mandatory = $True)]
+    $WebSession,
+
+    [Parameter(Position = 2, Mandatory = $True)]
+    [string]
+    $UserAgent,
+
+    [Parameter(Position = 3, Mandatory = $True)]
+    [bool]
+    $EnableDebugCapture,
+
+    [Parameter(Position = 4, Mandatory = $True)]
+    [string]
+    $DebugUserAgentType,
+
+    [Parameter(Position = 5, Mandatory = $False)]
+    [string]
+    $Username = "",
+
+    [Parameter(Position = 6, Mandatory = $False)]
+    [string]
+    $Password = ""
+
+    )
+
+    try {
+        $BootstrapRequest = Invoke-WebRequest -Uri $BootstrapUrl -WebSession $WebSession -UserAgent "$UserAgent" -ErrorAction Stop
+        if ($EnableDebugCapture) {
+            Write-DebugWebAuthCapture -UAtype $DebugUserAgentType -Stage "bootstrap" -Content $BootstrapRequest.Content -Username $Username -Password $Password
+        }
+
+        $BootstrapInterrupt = Get-M365InterruptConfig -Content $BootstrapRequest.Content
+        if ($BootstrapInterrupt.PageId -eq "BssoInterrupt" -and $BootstrapInterrupt.UrlPost) {
+            $BootstrapInterruptUrl = $BootstrapInterrupt.UrlPost
+            if ($BootstrapInterruptUrl.StartsWith("/")) {
+                $BootstrapInterruptUrl = "https://login.microsoftonline.com$BootstrapInterruptUrl"
+            }
+
+            $BootstrapInterruptHeaders = @{
+                'canary' = $BootstrapInterrupt.Canary
+                'client-request-id' = $BootstrapInterrupt.CorrelationId
+                'hpgid' = $BootstrapInterrupt.HpgId
+                'hpgact' = $BootstrapInterrupt.HpgAct
+                'Referer' = 'https://login.microsoftonline.com/'
+                'Origin' = 'https://login.microsoftonline.com'
+            }
+
+            try {
+                $BootstrapFollowup = Invoke-WebRequest -Uri $BootstrapInterruptUrl -WebSession $WebSession -UserAgent "$UserAgent" -Headers $BootstrapInterruptHeaders -ErrorAction Stop
+                if ($EnableDebugCapture) {
+                    Write-DebugWebAuthCapture -UAtype $DebugUserAgentType -Stage "bootstrap-bsso-followup" -Content $BootstrapFollowup.Content -Username $Username -Password $Password
+                }
+                return $BootstrapFollowup
+            }
+            catch {
+                if ($EnableDebugCapture -and $_.ErrorDetails.Message) {
+                    Write-DebugWebAuthCapture -UAtype $DebugUserAgentType -Stage "bootstrap-bsso-error" -Content $_.ErrorDetails.Message -Username $Username -Password $Password
+                }
+            }
+        }
+
+        return $BootstrapRequest
+    }
+    catch {
+        $StatusCode = Get-HttpStatusCodeFromErrorRecord -ErrorRecord $_
+
+        if ($StatusCode -ge 300 -and $StatusCode -lt 400) {
+            $LocationHeader = Get-ResponseHeaderValue -Headers $_.Exception.Response.Headers -Name "Location"
+            if ($EnableDebugCapture) {
+                $redirectDebug = "HTTP status: $StatusCode`nLocation: $LocationHeader"
+                Write-DebugWebAuthCapture -UAtype $DebugUserAgentType -Stage "bootstrap-redirect" -Content $redirectDebug -Username $Username -Password $Password
+            }
+
+            if ($LocationHeader) {
+                try {
+                    $redirectTarget = [string]($LocationHeader | Select-Object -First 1)
+                    if ($redirectTarget.StartsWith("/")) {
+                        $redirectTarget = "https://login.microsoftonline.com$redirectTarget"
+                    }
+
+                    $RedirectRequest = Invoke-WebRequest -Uri $redirectTarget -WebSession $WebSession -UserAgent "$UserAgent" -ErrorAction Stop
+                    if ($EnableDebugCapture) {
+                        Write-DebugWebAuthCapture -UAtype $DebugUserAgentType -Stage "bootstrap" -Content $RedirectRequest.Content -Username $Username -Password $Password
+                    }
+                    return $RedirectRequest
+                }
+                catch {
+                    if ($EnableDebugCapture -and $_.ErrorDetails.Message) {
+                        Write-DebugWebAuthCapture -UAtype $DebugUserAgentType -Stage "bootstrap-error" -Content $_.ErrorDetails.Message -Username $Username -Password $Password
+                    }
+                }
+            }
+        }
+        elseif ($EnableDebugCapture -and $_.ErrorDetails.Message) {
+            Write-DebugWebAuthCapture -UAtype $DebugUserAgentType -Stage "bootstrap-error" -Content $_.ErrorDetails.Message -Username $Username -Password $Password
+        }
+
+        if ($StatusCode) {
+            Write-Host -ForegroundColor Red "[*] Failed to load the Microsoft 365 web login bootstrap page. HTTP status: $StatusCode"
+        }
+        else {
+            Write-Host -ForegroundColor Red "[*] Failed to load the Microsoft 365 web login bootstrap page."
+        }
+
+        return $null
+    }
+}
+
+Function Sanitize-WebAuthContent{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    [string]
+    $Content = "",
+
+    [Parameter(Position = 1, Mandatory = $False)]
+    [string]
+    $Username = "",
+
+    [Parameter(Position = 2, Mandatory = $False)]
+    [string]
+    $Password = ""
+
+    )
+
+    $sanitized = $Content
+
+    if ($Username) {
+        $sanitized = $sanitized.Replace($Username, '<REDACTED_USERNAME>')
+    }
+
+    if ($Password) {
+        $sanitized = $sanitized.Replace($Password, '<REDACTED_PASSWORD>')
+    }
+
+    $patterns = @(
+        '(?i)("passwd"\s*:\s*")[^"]*(")',
+        "(?i)('passwd'\s*:\s*')[^']*(')",
+        '(?i)(passwd=)[^&"\s<]+',
+        '(?i)("flowToken"\s*:\s*")[^"]*(")',
+        '(?i)("sFT"\s*:\s*")[^"]*(")',
+        '(?i)(flowToken=)[^&"\s<]+',
+        '(?i)("canary"\s*:\s*")[^"]*(")',
+        '(?i)("apiCanary"\s*:\s*")[^"]*(")',
+        '(?i)(canary=)[^&"\s<]+',
+        '(?i)("ctx"\s*:\s*")[^"]*(")',
+        '(?i)("sCtx"\s*:\s*")[^"]*(")',
+        '(?i)("originalRequest"\s*:\s*")[^"]*(")',
+        '(?i)(ctx=)[^&"\s<]+',
+        '(?i)(ESTSAUTH=)[^;"\s<]+',
+        '(?i)(ESTSAUTHPERSISTENT=)[^;"\s<]+',
+        '(?i)(x-ms-request-id["'':=\s]+)[A-Za-z0-9\-]+'
+    )
+
+    foreach ($pattern in $patterns) {
+        $sanitized = [regex]::Replace($sanitized, $pattern, '$1<REDACTED>$2')
+    }
+
+    return $sanitized
+}
+
+Function Write-DebugWebAuthCapture{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    [string]
+    $UAtype = "",
+
+    [Parameter(Position = 1, Mandatory = $True)]
+    [string]
+    $Stage = "",
+
+    [Parameter(Position = 2, Mandatory = $True)]
+    [string]
+    $Content = "",
+
+    [Parameter(Position = 3, Mandatory = $False)]
+    [string]
+    $Username = "",
+
+    [Parameter(Position = 4, Mandatory = $False)]
+    [string]
+    $Password = ""
+
+    )
+
+    $safeUa = ($UAtype -replace '[^A-Za-z0-9_-]', '_')
+    $safeStage = ($Stage -replace '[^A-Za-z0-9_-]', '_')
+    $fileName = "WebAuthDebug-$safeUa-$safeStage.txt"
+    $sanitizedContent = Sanitize-WebAuthContent -Content $Content -Username $Username -Password $Password
+
+    Set-Content -Path $fileName -Value $sanitizedContent -Encoding ASCII
+    Write-Host -ForegroundColor DarkYellow "[***] Saved sanitized debug capture to $fileName"
+}
+
+Function Write-DebugWebAuthCookieCapture{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    [string]
+    $UAtype = "",
+
+    [Parameter(Position = 1, Mandatory = $True)]
+    [string]
+    $Stage = "",
+
+    [Parameter(Position = 2, Mandatory = $True)]
+    $CookieContainer
+
+    )
+
+    $cookieLines = @()
+    foreach ($uri in @(
+        'https://login.microsoftonline.com',
+        'https://outlook.office365.com',
+        'https://outlook.office.com'
+    )) {
+        try {
+            $cookies = $CookieContainer.GetCookies($uri)
+            foreach ($cookie in $cookies) {
+                $cookieLines += "$uri`t$($cookie.Name)=<REDACTED>"
+            }
+        }
+        catch {
+        }
+    }
+
+    if (-not $cookieLines) {
+        $cookieLines = @('No cookies captured')
+    }
+
+    $safeUa = ($UAtype -replace '[^A-Za-z0-9_-]', '_')
+    $safeStage = ($Stage -replace '[^A-Za-z0-9_-]', '_')
+    $fileName = "WebAuthDebug-$safeUa-$safeStage.txt"
+    Set-Content -Path $fileName -Value ($cookieLines -join [Environment]::NewLine) -Encoding ASCII
+    Write-Host -ForegroundColor DarkYellow "[***] Saved sanitized debug capture to $fileName"
 }
 
 Function Invoke-EWSAuth{
@@ -875,16 +1583,14 @@ Function Invoke-O365ActiveSyncAuth{
     $EncodeUsernamePassword = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($('{0}:{1}' -f $Username, $Password)))
     $Headers = @{'Authorization' = "Basic $($EncodeUsernamePassword)"}
     
+    $StatusCode = $null
     try {
         $easlogin = Invoke-WebRequest -Uri $EASURL -Headers $Headers -Method Get -ErrorAction Stop
-        }catch {
-            $resp = $_.Exception.Response.GetResponseStream()
-            $reader = New-Object System.IO.StreamReader($resp)
-            $reader.BaseStream.Position = 0
-            $reader.DiscardBufferedData()
-            $res = $reader.ReadToEnd()
-            $StatusCode = $_.Exception.Response.StatusCode.Value__
-        }
+    }
+    catch {
+        $StatusCode = Get-HttpStatusCodeFromErrorRecord -ErrorRecord $_
+    }
+
         if ($StatusCode -eq 505)
         {
             Write-Host -ForegroundColor Green "[*] SUCCESS! $username successfully authenticated to O365 ActiveSync."
