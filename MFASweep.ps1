@@ -156,7 +156,7 @@ Function Invoke-MFASweep{
 
 
     $title = "Confirm MFA Sweep"
-    $message = "[*] WARNING: This script is about to attempt logging into the $username account TEN (10) different times (11 if you included ADFS). If you entered an incorrect password this may lock the account out. Are you sure you want to continue?"
+    $message = "[*] WARNING: This script is about to attempt logging into the $username account ELEVEN (11) different times (12 if you included ADFS). If you entered an incorrect password this may lock the account out. Are you sure you want to continue?"
 
     $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", `
         "Attempts to authenticate 10 times to different Microsoft services."
@@ -182,6 +182,7 @@ Function Invoke-MFASweep{
     $global:o365apresult = "NO"
     $global:o365ipresult = "NO"
     $global:o365wpresult = "NO"
+    $global:o365upresult = "NO"
     $global:ewsresult = "NO"
     $global:asyncresult = "NO"
     $global:adfsresult = "NO"
@@ -200,6 +201,7 @@ Function Invoke-MFASweep{
         Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Android -WriteTokens -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
         Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype iPhone -WriteTokens -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
         Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype WindowsPhone -WriteTokens -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype NintendoSwitch -WriteTokens -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
     }
     else{
         Invoke-GraphAPIAuth -Username $Username -Password $Password
@@ -213,6 +215,7 @@ Function Invoke-MFASweep{
         Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype Android -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
         Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype iPhone -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
         Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype WindowsPhone -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype NintendoSwitch -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
     }
     Write-Output "############################################################################################################"
     Write-Host `r`n
@@ -241,6 +244,7 @@ Function Invoke-MFASweep{
     [pscustomobject]@{Service="M365 w/ Android UA"; Result=$global:o365apresult},
     [pscustomobject]@{Service="M365 w/ iPhone UA"; Result=$global:o365ipresult},
     [pscustomobject]@{Service="M365 w/ Windows Phone UA"; Result=$global:o365wpresult},
+    [pscustomobject]@{Service="M365 w/ Unknown Platform UA"; Result=$global:o365upresult},
     [pscustomobject]@{Service="Exchange Web Services (BASIC Auth)"; Result=$global:ewsresult},
     [pscustomobject]@{Service="Active Sync (BASIC Auth)"; Result=$global:asyncresult}
 )
@@ -307,6 +311,7 @@ Function Invoke-M365WebPortalAuth{
     "Android"     = "o365apresult"
     "iPhone"      = "o365ipresult"
     "WindowsPhone" = "o365wpresult"
+    "NintendoSwitch" = "o365upresult"
     }
 
     Write-Host `r`n
@@ -333,8 +338,11 @@ Function Invoke-M365WebPortalAuth{
         elseif($UAType -eq "MacOS"){
             $UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 14.7; rv:137.0) Gecko/20100101 Firefox/137.0"
         }
+        elseif($UAType -eq "NintendoSwitch"){
+            $UserAgent = "Mozilla/5.0 (Nintendo Switch; WifiWebAuthApplet) AppleWebKit/601.6 (KHTML, like Gecko) NF/4.0.0.5.10 NintendoBrowser/5.1.0.13343"
+        }
         else{
-        Write-Host -ForegroundColor Red "[*] Unknown User Agent Type. Try: Windows, Android, iPhone, Linux, WindowsPhone, or MacOS"
+        Write-Host -ForegroundColor Red "[*] Unknown User Agent Type. Try: Windows, Android, iPhone, Linux, WindowsPhone, MacOS, or NintendoSwitch"
         break
         }
     }
@@ -1835,6 +1843,40 @@ $ApiEndpoints = @{
 }
 
 $MSclientIDs = $GuidNames.Keys
+
+Function Invoke-UnknownPlatformAuth{
+
+    Param(
+
+    [Parameter(Position = 0, Mandatory = $True)]
+    [string]
+    $Username = "",
+
+    [Parameter(Position = 1, Mandatory = $True)]
+    [system.URI]
+    $Password = "",
+
+    [Parameter(Position = 2, Mandatory = $False)]
+    [switch]$WriteTokens,
+
+    [Parameter(Position = 3, Mandatory = $False)]
+    [switch]$DebugWebAuth,
+
+    [Parameter(Position = 4, Mandatory = $False)]
+    [string]$DebugUserAgent = "NintendoSwitch"
+    )
+
+    Write-Host "---------------- Unknown Platform MFA Bypass Check ----------------"
+    Write-Host -ForegroundColor Yellow "[*] Testing for misconfigured Conditional Access policies that don't enforce MFA for unknown device platforms..."
+    Write-Host -ForegroundColor Yellow "[*] Using a Nintendo Switch user agent so Entra ID reports the device platform and browser as Unknown."
+
+    if ($WriteTokens){
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype NintendoSwitch -WriteTokens -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
+    }
+    else{
+        Invoke-M365WebPortalAuth -Username $Username -Password $Password -UAtype NintendoSwitch -DebugWebAuth:$DebugWebAuth -DebugUserAgent $DebugUserAgent
+    }
+}
 
 Function Invoke-BruteClientIDs {
     Param(
