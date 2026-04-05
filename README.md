@@ -16,7 +16,7 @@ For more information check out the blog post here: [Exploiting MFA Inconsistenci
 
 ![MFASweep Example](/example.jpg?raw=true)
 
-![Single Factor Access Results Example](https://user-images.githubusercontent.com/2296229/204374571-0b299177-a5ab-4e05-a313-d9fe5151d1d6.png)
+![Single Factor Access Results Example](/example2.jpg?raw=true)
 
 ## Usage
 
