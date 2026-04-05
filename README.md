@@ -6,11 +6,11 @@ Currently MFASweep has the ability to login to the following services:
 * Microsoft Graph API
 * Azure Service Management API
 * Microsoft 365 Exchange Web Services
-* Microsoft 365 Web Portal w/ 6 device types (Windows, Linux, MacOS, Android Phone, iPhone, Windows Phone)
+* Microsoft 365 Web Portal w/ 7 device types (Windows, Linux, MacOS, Android Phone, iPhone, Windows Phone, Unknown Platform)
 * Microsoft 365 Active Sync
 * ADFS
 
-**WARNING: This script attempts to login to the provided account TEN (10) different times (11 if you include ADFS). If you entered an incorrect password this may lock the account out.**
+**WARNING: This script attempts to login to the provided account ELEVEN (11) different times (12 if you include ADFS). If you entered an incorrect password this may lock the account out.**
 
 For more information check out the blog post here: [Exploiting MFA Inconsistencies on Microsoft Services](https://www.blackhillsinfosec.com/exploiting-mfa-inconsistencies-on-microsoft-services/) 
 
@@ -69,6 +69,13 @@ Invoke-O365ActiveSyncAuth -Username targetuser@targetdomain.com -Password Winter
 **ADFS**
 ```PowerShell
 Invoke-ADFSAuth -Username targetuser@targetdomain.com -Password Winter2020 
+```
+
+**Unknown Platform (CA Policy Bypass)**
+
+This module tests for misconfigured Conditional Access policies that don't enforce MFA for unknown device platforms. It uses a Nintendo Switch user-agent string so that Entra ID reports the device platform and browser as "Unknown."
+```PowerShell
+Invoke-UnknownPlatformAuth -Username targetuser@targetdomain.com -Password Winter2020 
 ```
 ### Brute Forcing Client IDs During ROPC Auth
 The Invoke-BruteClientIDs function will loop through various resource types and client IDs during ROPC auth to find single factor access for various combinations of client IDs and resources. If any authentication methods result in success, tokens and/or cookies will be written to AccessTokens.json. (Currently does not log cookies or tokens for EWS, ActiveSync, and ADFS)
