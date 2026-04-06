@@ -87,7 +87,7 @@ Function Invoke-MFASweep{
     Optional Dependencies: None
   
     .DESCRIPTION
-    This script attempts to login to various Microsoft services using a provided set of credentials. It will attempt to identify where authentication was successful and in some cases where MFA is enabled. By default this script will attempt to login to the Microsoft Graph API, Azure Resource Manager API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal with both desktop and mobile user agents, and Microsoft 365 Active Sync. It also has an additional check for ADFS configurations and can attempt to login to the on-prem ADFS server if detected.
+    This script attempts to login to various Microsoft services using a provided set of credentials. It will attempt to identify where authentication was successful and in some cases where MFA is enabled. By default this script will attempt to login to the Microsoft Graph API, Azure Resource Manager API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal with multiple user agents, and Microsoft 365 Active Sync. It also has an additional check for ADFS configurations and can attempt to login to the on-prem ADFS server if detected.
       
     .PARAMETER Username
     Email Address to use during Authentication
@@ -109,7 +109,7 @@ Function Invoke-MFASweep{
     
     Description
     -----------
-    This command will use the provided credentials and attempt to authenticate to the Microsoft Graph API, Azure Resource Manager API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal with both desktop and mobile user agents, and Microsoft 365 Active Sync. Prompts for performing recon and authenticating to ADFS will be displayed.
+    This command will use the provided credentials and attempt to authenticate to the Microsoft Graph API, Azure Resource Manager API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal with multiple user agents, and Microsoft 365 Active Sync. Prompts for performing recon and authenticating to ADFS will be displayed.
   
     .EXAMPLE
     C:\PS> Invoke-MFASweep -Username targetuser@targetdomain.com -Password Winter2020 -Recon -IncludeADFS
@@ -127,7 +127,7 @@ Function Invoke-MFASweep{
     $Username = "",
 
     [Parameter(Position = 1, Mandatory = $True)]
-    [system.URI]
+    [string]
     $Password = "",
     
     [Parameter(Position = 2, Mandatory = $False)]
@@ -357,15 +357,15 @@ Function Invoke-M365WebPortalAuth{
     $Username = "",
 
     [Parameter(Position = 1, Mandatory = $True)]
-    [system.URI]
+    [string]
     $Password = "",
 
     [Parameter(Position = 2, Mandatory = $False)]
-    [system.URI]
+    [string]
     $UAtype = "Windows",
 
     [Parameter(Position = 3, Mandatory = $False)]
-    [system.URI]
+    [string]
     $UserAgent = "",
 
     [Parameter(Position = 4, Mandatory = $False)]
@@ -423,7 +423,7 @@ Function Invoke-M365WebPortalAuth{
     }
     Write-Host "---------------- Microsoft 365 Web Portal w/ ($UAtype) User Agent ----------------"
     Write-Host -ForegroundColor Yellow "[*] Authenticating to Microsoft 365 Web Portal using a ($UAtype) user agent..."
-    $UAtypeName = if ($UAtype -is [System.Uri]) { $UAtype.OriginalString } else { [string]$UAtype }
+    $UAtypeName = [string]$UAtype
     $EnableDebugCapture = $DebugWebAuth -and ($UAtypeName -eq $DebugUserAgent -or ($UserAgent -ne "" -and $DebugUserAgent -eq "Custom User Agent"))
     $BootstrapUrl = "https://login.microsoftonline.com/common/oauth2/authorize?client_id=00000002-0000-0ff1-ce00-000000000000&response_type=code&redirect_uri=https%3A%2F%2Foutlook.office365.com%2Fowa%2F&resource=https%3A%2F%2Foutlook.office365.com&response_mode=form_post"
     $o365 = New-Object Microsoft.PowerShell.Commands.WebRequestSession
@@ -1313,7 +1313,7 @@ Function Invoke-EWSAuth{
     $Username = "",
 
     [Parameter(Position = 1, Mandatory = $True)]
-    [system.URI]
+    [string]
     $Password = ""
     )
     
@@ -1413,7 +1413,7 @@ Function Invoke-GraphAPIAuth{
     $Username = "",
 
     [Parameter(Position = 1, Mandatory = $True)]
-    [system.URI]
+    [string]
     $Password = "",
 
     [Parameter(Position = 2, Mandatory = $False)]
@@ -1586,7 +1586,7 @@ Function Invoke-AzureManagementAPIAuth{
     $Username = "",
 
     [Parameter(Position = 1, Mandatory = $True)]
-    [system.URI]
+    [string]
     $Password = "",
 
     [Parameter(Position = 2, Mandatory = $False)]
@@ -1704,7 +1704,7 @@ Function Invoke-O365ActiveSyncAuth{
     $Username = "",
 
     [Parameter(Position = 1, Mandatory = $True)]
-    [system.URI]
+    [string]
     $Password = ""
     )
 
@@ -1748,7 +1748,7 @@ Function Invoke-ADFSAuth{
     $Username = "",
 
     [Parameter(Position = 1, Mandatory = $True)]
-    [system.URI]
+    [string]
     $Password = ""
     
     )
@@ -2491,7 +2491,7 @@ Function Invoke-UnknownPlatformAuth{
     $Username = "",
 
     [Parameter(Position = 1, Mandatory = $True)]
-    [system.URI]
+    [string]
     $Password = "",
 
     [Parameter(Position = 2, Mandatory = $False)]
@@ -2586,6 +2586,55 @@ Function Invoke-BruteClientIDs {
     }
 }
 
+Function Get-JsonFileEntries {
+    param (
+        [string]$Path
+    )
+
+    if (!(Test-Path $Path)) {
+        return @()
+    }
+
+    $rawContent = Get-Content -Path $Path -Raw -ErrorAction SilentlyContinue
+    if ([string]::IsNullOrWhiteSpace($rawContent)) {
+        return @()
+    }
+
+    try {
+        $parsedContent = $rawContent | ConvertFrom-Json -ErrorAction Stop
+        return @($parsedContent)
+    }
+    catch {
+        $legacyEntries = @()
+        $jsonBlocks = [regex]::Split($rawContent.Trim(), "\r?\n\s*\r?\n")
+        foreach ($jsonBlock in $jsonBlocks) {
+            if ([string]::IsNullOrWhiteSpace($jsonBlock)) {
+                continue
+            }
+
+            try {
+                $legacyEntries += ($jsonBlock | ConvertFrom-Json -ErrorAction Stop)
+            }
+            catch {
+                Write-Host -ForegroundColor Yellow "[*] WARNING: Unable to parse an existing entry in $Path. It was skipped."
+            }
+        }
+
+        return @($legacyEntries)
+    }
+}
+
+Function Add-JsonEntryToFile {
+    param (
+        [string]$Path,
+        $Entry
+    )
+
+    $entries = @(Get-JsonFileEntries -Path $Path)
+    $entries += $Entry
+    $entries | ConvertTo-Json -Depth 100 | Set-Content -Path $Path -Encoding UTF8
+}
+
 Function Write-TokensToFile {
     param (
         [switch]$WriteTokens,
@@ -2609,21 +2658,8 @@ Function Write-TokensToFile {
             "RefreshToken" = $RefreshToken
         }
 
-        # Convert the tokenData to JSON
-        $jsonTokenData = $tokenData | ConvertTo-Json -Depth 100
+        Add-JsonEntryToFile -Path $tokenFilePath -Entry $tokenData
 
-        # Check if the file exists; if not, create an empty file silently
-        if (!(Test-Path $tokenFilePath)) {
-            New-Item -Path $tokenFilePath -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null
-        }
-
-        # Append the JSON blob to the file
-        Add-Content -Path $tokenFilePath -Value $jsonTokenData
-
-        # Add a newline for clarity between entries
-        Add-Content -Path $tokenFilePath -Value "`n"
-
-        # You can comment or remove this line if you want no output at all
         Write-Host -ForegroundColor Cyan "[*] Token appended to $tokenFilePath"
     }
 }
@@ -2653,19 +2689,7 @@ Function Write-CookiesToFile {
         }
     }
 
-    # Convert the cookie data to JSON
-    $jsonCookieData = $cookieData | ConvertTo-Json -Depth 100
-
-    # Check if the file exists; if not, create an empty file silently
-    if (!(Test-Path $tokenFilePath)) {
-        New-Item -Path $tokenFilePath -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null
-    }
-
-    # Append the JSON blob to the file
-    Add-Content -Path $tokenFilePath -Value $jsonCookieData
-
-    # Add a newline for clarity between entries
-    Add-Content -Path $tokenFilePath -Value "`n"
+    Add-JsonEntryToFile -Path $tokenFilePath -Entry $cookieData
 
     Write-Host -ForegroundColor Cyan "[*] Cookies and User Agent appended to $tokenFilePath"
 }
