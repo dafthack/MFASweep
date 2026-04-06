@@ -4,7 +4,7 @@ MFASweep is a PowerShell script that attempts to log in to various Microsoft ser
 Currently MFASweep has the ability to login to the following services:
 
 * Microsoft Graph API
-* Azure Service Management API
+* Azure Resource Manager API
 * Microsoft 365 Exchange Web Services
 * Microsoft 365 Web Portal w/ 7 device types (Windows, Linux, MacOS, Android Phone, iPhone, Windows Phone, Unknown Platform)
 * Microsoft 365 Active Sync
@@ -20,7 +20,7 @@ For more information check out the blog post here: [Exploiting MFA Inconsistenci
 
 ## Usage
 
-This command will use the provided credentials and attempt to authenticate to the Microsoft Graph API, Azure Service Management API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal with both a desktop browser and mobile, and Microsoft 365 Active Sync. If any authentication methods result in success, tokens and/or cookies will be written to AccessTokens.json. (Currently does not log cookies or tokens for EWS, ActiveSync, and ADFS)
+This command will use the provided credentials and attempt to authenticate to the Microsoft Graph API, Azure Resource Manager API, Microsoft 365 Exchange Web Services, Microsoft 365 Web Portal with both a desktop browser and mobile, and Microsoft 365 Active Sync. If any authentication methods result in success, tokens and/or cookies will be written to AccessTokens.json. (Currently does not log cookies or tokens for EWS, ActiveSync, and ADFS)
 
 ```PowerShell
 Invoke-MFASweep -Username targetuser@targetdomain.com -Password Winter2024 -WriteTokens 
@@ -41,7 +41,7 @@ Each individual module can be run separately if needed as well.
 Invoke-GraphAPIAuth -Username targetuser@targetdomain.com -Password Winter2020 
 ```
 
-**Azure Service Management API**
+**Azure Resource Manager API**
 ```PowerShell
 Invoke-AzureManagementAPIAuth -Username targetuser@targetdomain.com -Password Winter2020 
 ```
