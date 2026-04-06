@@ -1466,6 +1466,12 @@ Function Invoke-GraphAPIAuth{
             Write-Host -ForegroundColor "green" "[*] SUCCESS! $username was able to authenticate to $Resource - NOTE: The response indicates conditional access (MFA: DUO or other) is in use."
             }
 
+            # Conditional Access policy blocked token issuance
+        ElseIf($RespErr -match "AADSTS53003")
+            {
+            Write-Output "[*] WARNING! The account $username appears to be blocked by a Conditional Access Policy."
+            }
+
             # Locked out account or Smart Lockout in place
         ElseIf($RespErr -match "AADSTS50053")
             {
@@ -1575,6 +1581,12 @@ Function Invoke-AzureManagementAPIAuth{
         ElseIf($RespErr -match "AADSTS50158")
             {
             Write-Host -ForegroundColor "green" "[*] SUCCESS! $username was able to authenticate to the Azure Resource Manager API - NOTE: The response indicates conditional access (MFA: DUO or other) is in use."
+            }
+
+            # Conditional Access policy blocked token issuance
+        ElseIf($RespErr -match "AADSTS53003")
+            {
+            Write-Output "[*] WARNING! The account $username appears to be blocked by a Conditional Access Policy."
             }
 
             # Locked out account or Smart Lockout in place
@@ -1949,7 +1961,8 @@ Function Write-TokensToFile {
     )
 
     if ($WriteTokens) {
-        $tokenFilePath = Join-Path ("$PSScriptRoot" ? "$PSScriptRoot" : ".") "AccessTokens.json"
+        $basePath = if ($PSScriptRoot) { $PSScriptRoot } else { "." }
+        $tokenFilePath = Join-Path -Path $basePath -ChildPath "AccessTokens.json"
         $currentDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
         # Create the new token entry
@@ -1987,7 +2000,8 @@ Function Write-CookiesToFile {
         [string]$UserAgent
     )
 
-    $tokenFilePath = Join-Path ("$PSScriptRoot" ? "$PSScriptRoot" : ".") "AccessTokens.json"
+    $basePath = if ($PSScriptRoot) { $PSScriptRoot } else { "." }
+    $tokenFilePath = Join-Path -Path $basePath -ChildPath "AccessTokens.json"
     $currentDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
     # Prepare cookie data
