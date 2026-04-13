@@ -26,6 +26,7 @@ from datetime import datetime
 
 try:
     import requests
+
     requests.packages.urllib3.disable_warnings()
 except ImportError:
     print("[!] Missing dependency: pip install requests")
@@ -36,50 +37,92 @@ except ImportError:
 # Constants
 # ─────────────────────────────────────────────
 
-GRAPH_CLIENT_ID    = "1b730954-1685-4b74-9bfd-dac224a7b894"   # Azure AD PowerShell
-AZUREMGMT_CLIENT   = "1950a258-227b-4e31-a9cf-717495945fc2"   # Azure Management
-TEAMS_CLIENT       = "1fec8e78-bce4-4aaf-ab1b-5451cc387264"
-OFFICE_CLIENT      = "d3590ed6-52b3-4102-aeff-aad2292ab01c"
-ACTIVESYNC_CLIENT  = "d3590ed6-52b3-4102-aeff-aad2292ab01c"
+GRAPH_CLIENT_ID = "1b730954-1685-4b74-9bfd-dac224a7b894"  # Azure AD PowerShell
+AZUREMGMT_CLIENT = "1950a258-227b-4e31-a9cf-717495945fc2"  # Azure Management
+TEAMS_CLIENT = "1fec8e78-bce4-4aaf-ab1b-5451cc387264"
+OFFICE_CLIENT = "d3590ed6-52b3-4102-aeff-aad2292ab01c"
+ACTIVESYNC_CLIENT = "d3590ed6-52b3-4102-aeff-aad2292ab01c"
 
-GRAPH_RESOURCE     = "https://graph.microsoft.com"
+GRAPH_RESOURCE = "https://graph.microsoft.com"
 AZUREMGMT_RESOURCE = "https://management.azure.com/"
-TEAMS_RESOURCE     = "https://api.spaces.skype.com"
-OFFICE_RESOURCE    = "https://officeapps.live.com"
+TEAMS_RESOURCE = "https://api.spaces.skype.com"
+OFFICE_RESOURCE = "https://officeapps.live.com"
 
-ROPC_ENDPOINT      = "https://login.microsoftonline.com/common/oauth2/token"
-ADFS_REALM_URL     = "https://login.microsoftonline.com/getuserrealm.srf"
+ROPC_ENDPOINT = "https://login.microsoftonline.com/common/oauth2/token"
+ADFS_REALM_URL = "https://login.microsoftonline.com/getuserrealm.srf"
 
 # User-Agents for the M365 Portal checks
 USER_AGENTS = {
-    "Windows":       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Linux":         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "MacOS":         "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Windows": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Linux": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "MacOS": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Android Phone": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-    "iPhone":        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
+    "iPhone": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
     "Windows Phone": "Mozilla/5.0 (Windows Phone 10.0; Android 6.0.1; Microsoft; Lumia 950) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Mobile Safari/537.36 Edge/15.15254",
+    "NintendoSwitch": "Mozilla/5.0 (Nintendo Switch; WifiWebAuthApplet) AppleWebKit/601.6 (KHTML, like Gecko) NF/4.0.0.5.10 NintendoBrowser/5.1.0.13343",
 }
 
 # Resource/ClientID combos for brute mode
 BRUTE_COMBOS = [
-    {"resource": "https://graph.microsoft.com",       "client_id": "1b730954-1685-4b74-9bfd-dac224a7b894", "label": "Graph API (AAD PowerShell)"},
-    {"resource": "https://graph.microsoft.com",       "client_id": "d3590ed6-52b3-4102-aeff-aad2292ab01c", "label": "Graph API (Office Client)"},
-    {"resource": "https://graph.microsoft.com",       "client_id": "1fec8e78-bce4-4aaf-ab1b-5451cc387264", "label": "Graph API (Teams)"},
-    {"resource": "https://management.azure.com/",     "client_id": "1950a258-227b-4e31-a9cf-717495945fc2", "label": "Azure Management"},
-    {"resource": "https://management.azure.com/",     "client_id": "d3590ed6-52b3-4102-aeff-aad2292ab01c", "label": "Azure Management (Office Client)"},
-    {"resource": "https://api.spaces.skype.com",      "client_id": "1fec8e78-bce4-4aaf-ab1b-5451cc387264", "label": "Teams"},
-    {"resource": "https://officeapps.live.com",       "client_id": "d3590ed6-52b3-4102-aeff-aad2292ab01c", "label": "Office Apps"},
-    {"resource": "https://substrate.office.com",      "client_id": "d3590ed6-52b3-4102-aeff-aad2292ab01c", "label": "Substrate (Office)"},
-    {"resource": "https://outlook.office365.com",     "client_id": "d3590ed6-52b3-4102-aeff-aad2292ab01c", "label": "Exchange Online (Office)"},
-    {"resource": "https://outlook.office365.com",     "client_id": "1b730954-1685-4b74-9bfd-dac224a7b894", "label": "Exchange Online (AAD PS)"},
+    {
+        "resource": "https://graph.microsoft.com",
+        "client_id": "1b730954-1685-4b74-9bfd-dac224a7b894",
+        "label": "Graph API (AAD PowerShell)",
+    },
+    {
+        "resource": "https://graph.microsoft.com",
+        "client_id": "d3590ed6-52b3-4102-aeff-aad2292ab01c",
+        "label": "Graph API (Office Client)",
+    },
+    {
+        "resource": "https://graph.microsoft.com",
+        "client_id": "1fec8e78-bce4-4aaf-ab1b-5451cc387264",
+        "label": "Graph API (Teams)",
+    },
+    {
+        "resource": "https://management.azure.com/",
+        "client_id": "1950a258-227b-4e31-a9cf-717495945fc2",
+        "label": "Azure Management",
+    },
+    {
+        "resource": "https://management.azure.com/",
+        "client_id": "d3590ed6-52b3-4102-aeff-aad2292ab01c",
+        "label": "Azure Management (Office Client)",
+    },
+    {
+        "resource": "https://api.spaces.skype.com",
+        "client_id": "1fec8e78-bce4-4aaf-ab1b-5451cc387264",
+        "label": "Teams",
+    },
+    {
+        "resource": "https://officeapps.live.com",
+        "client_id": "d3590ed6-52b3-4102-aeff-aad2292ab01c",
+        "label": "Office Apps",
+    },
+    {
+        "resource": "https://substrate.office.com",
+        "client_id": "d3590ed6-52b3-4102-aeff-aad2292ab01c",
+        "label": "Substrate (Office)",
+    },
+    {
+        "resource": "https://outlook.office365.com",
+        "client_id": "d3590ed6-52b3-4102-aeff-aad2292ab01c",
+        "label": "Exchange Online (Office)",
+    },
+    {
+        "resource": "https://outlook.office365.com",
+        "client_id": "1b730954-1685-4b74-9bfd-dac224a7b894",
+        "label": "Exchange Online (AAD PS)",
+    },
 ]
 
-tokens_store = []   # Collected tokens/cookies for --write-tokens
+tokens_store = []  # Collected tokens/cookies for --write-tokens
 
 
 # ─────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────
+
 
 def banner():
     print("\033[93m[!] Original by @dafthack")
@@ -90,14 +133,18 @@ def banner():
 def ok(msg):
     print(f"\033[92m[+] {msg}\033[0m")
 
+
 def info(msg):
     print(f"\033[96m[*] {msg}\033[0m")
+
 
 def warn(msg):
     print(f"\033[93m[!] {msg}\033[0m")
 
+
 def fail(msg):
     print(f"\033[91m[-] {msg}\033[0m")
+
 
 def section(title):
     print(f"\n\033[1m\033[94m{'─'*55}")
@@ -108,12 +155,12 @@ def section(title):
 def ropc_token(username, password, client_id, resource, scope="openid"):
     """Resource Owner Password Credentials grant."""
     data = {
-        "grant_type":  "password",
-        "username":    username,
-        "password":    password,
-        "client_id":   client_id,
-        "resource":    resource,
-        "scope":       scope,
+        "grant_type": "password",
+        "username": username,
+        "password": password,
+        "client_id": client_id,
+        "resource": resource,
+        "scope": scope,
     }
     try:
         r = requests.post(ROPC_ENDPOINT, data=data, timeout=20, verify=False)
@@ -125,11 +172,16 @@ def ropc_token(username, password, client_id, resource, scope="openid"):
 def mfa_required(response_json):
     """Return True if the error indicates MFA is required."""
     desc = response_json.get("error_description", "").lower()
-    err  = response_json.get("error", "").lower()
+    err = response_json.get("error", "").lower()
     mfa_hints = [
-        "mfa", "multi-factor", "multifactor",
-        "aadsts50076", "aadsts50079", "aadsts50074",
-        "strong authentication", "additional security verification",
+        "mfa",
+        "multi-factor",
+        "multifactor",
+        "aadsts50076",
+        "aadsts50079",
+        "aadsts50074",
+        "strong authentication",
+        "additional security verification",
     ]
     return any(h in desc or h in err for h in mfa_hints)
 
@@ -159,9 +211,11 @@ def check_ropc(label, username, password, client_id, resource, write_tokens=Fals
 
     return False
 
+
 # ─────────────────────────────────────────────
 # ADFS Recon
 # ─────────────────────────────────────────────
+
 
 def check_adfs_recon(username):
     section("ADFS Recon")
@@ -170,10 +224,11 @@ def check_adfs_recon(username):
         r = requests.get(
             ADFS_REALM_URL,
             params={"login": username, "xml": "1"},
-            timeout=15, verify=False
+            timeout=15,
+            verify=False,
         )
         root = ET.fromstring(r.text)
-        ns_type  = root.findtext("NameSpaceType")
+        ns_type = root.findtext("NameSpaceType")
         auth_url = root.findtext("AuthURL")
 
         if ns_type == "Federated":
@@ -196,17 +251,29 @@ def check_adfs_login(username, password, adfs_url):
 
     info(f"Attempting ADFS auth at: {adfs_url}")
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    data    = {"UserName": username, "Password": password, "AuthMethod": "FormsAuthentication"}
+    data = {
+        "UserName": username,
+        "Password": password,
+        "AuthMethod": "FormsAuthentication",
+    }
 
     try:
-        r = requests.post(adfs_url, data=data, headers=headers,
-                          allow_redirects=True, timeout=20, verify=False)
+        r = requests.post(
+            adfs_url,
+            data=data,
+            headers=headers,
+            allow_redirects=True,
+            timeout=20,
+            verify=False,
+        )
         if r.status_code == 200 and "samlp:Response" in r.text:
             ok("ADFS Authentication SUCCESS — No MFA enforced!")
         elif r.status_code in (200, 302) and "error" not in r.url.lower():
             ok("ADFS Authentication appears successful (redirect with no error).")
         else:
-            warn(f"ADFS Authentication result unclear (status {r.status_code}). Check manually.")
+            warn(
+                f"ADFS Authentication result unclear (status {r.status_code}). Check manually."
+            )
     except Exception as e:
         fail(f"ADFS login request failed: {e}")
 
@@ -215,9 +282,10 @@ def check_adfs_login(username, password, adfs_url):
 # M365 Web Portal (cookie-based)
 # ─────────────────────────────────────────────
 
+
 def check_m365_portal(username, password, write_tokens=False):
     section("Microsoft 365 Web Portal")
-    info("Testing 6 device User-Agents against the M365 web portal...")
+    info("Testing 7 device User-Agents against the M365 web portal...")
 
     session = requests.Session()
 
@@ -226,7 +294,9 @@ def check_m365_portal(username, password, write_tokens=False):
         init = session.get(
             "https://outlook.office365.com",
             headers={"User-Agent": USER_AGENTS["Windows"]},
-            allow_redirects=True, timeout=20, verify=False
+            allow_redirects=True,
+            timeout=20,
+            verify=False,
         )
     except Exception as e:
         fail(f"Could not reach M365 portal: {e}")
@@ -234,6 +304,7 @@ def check_m365_portal(username, password, write_tokens=False):
 
     # Extract the login POST URL from the page source
     import re
+
     url_match = re.search(r'"urlLogin"\s*:\s*"([^"]+)"', init.text)
     if not url_match:
         # Fall back to the standard endpoint
@@ -244,7 +315,7 @@ def check_m365_portal(username, password, write_tokens=False):
     ctx_match = re.search(r'"sCtx"\s*:\s*"([^"]+)"', init.text)
     flow_token_match = re.search(r'"sFT"\s*:\s*"([^"]+)"', init.text)
 
-    sctx       = ctx_match.group(1)       if ctx_match        else ""
+    sctx = ctx_match.group(1) if ctx_match else ""
     flow_token = flow_token_match.group(1) if flow_token_match else ""
 
     for device, ua in USER_AGENTS.items():
@@ -255,27 +326,37 @@ def check_m365_portal(username, password, write_tokens=False):
         try:
             # POST credentials
             payload = {
-                "login":     username,
-                "passwd":    password,
-                "ctx":       sctx,
+                "login": username,
+                "passwd": password,
+                "ctx": sctx,
                 "flowToken": flow_token,
-                "canary":    "",
+                "canary": "",
             }
-            r = s.post(login_url, data=payload, headers=headers,
-                       allow_redirects=True, timeout=20, verify=False)
+            r = s.post(
+                login_url,
+                data=payload,
+                headers=headers,
+                allow_redirects=True,
+                timeout=20,
+                verify=False,
+            )
 
             if "OIDCAuth" in r.url or "outlook.office365.com" in r.url:
                 ok(f"  [{device}] M365 Portal login SUCCESS — No MFA enforced!")
                 if write_tokens:
-                    tokens_store.append({
-                        "service": f"M365 Portal ({device})",
-                        "cookies": dict(s.cookies)
-                    })
+                    tokens_store.append(
+                        {
+                            "service": f"M365 Portal ({device})",
+                            "cookies": dict(s.cookies),
+                        }
+                    )
             elif mfa_required({"error_description": r.text, "error": r.text}):
                 warn(f"  [{device}] MFA IS required.")
             elif "AADSTS" in r.text:
                 code = re.search(r"AADSTS\d+", r.text)
-                fail(f"  [{device}] Auth failed: {code.group(0) if code else 'AADSTS error'}")
+                fail(
+                    f"  [{device}] Auth failed: {code.group(0) if code else 'AADSTS error'}"
+                )
             else:
                 warn(f"  [{device}] Result unclear — manual verification recommended.")
         except Exception as e:
@@ -286,16 +367,13 @@ def check_m365_portal(username, password, write_tokens=False):
 # Exchange Web Services (Basic Auth probe)
 # ─────────────────────────────────────────────
 
+
 def check_ews(username, password):
     section("Microsoft 365 Exchange Web Services (EWS)")
     info("Probing EWS endpoint with Basic Auth...")
     ews_url = "https://outlook.office365.com/EWS/Exchange.asmx"
     try:
-        r = requests.get(
-            ews_url,
-            auth=(username, password),
-            timeout=20, verify=False
-        )
+        r = requests.get(ews_url, auth=(username, password), timeout=20, verify=False)
         if r.status_code == 200:
             ok("EWS Authentication SUCCESS — No MFA enforced!")
         elif r.status_code == 401:
@@ -317,6 +395,7 @@ def check_ews(username, password):
 # ActiveSync
 # ─────────────────────────────────────────────
 
+
 def check_activesync(username, password):
     section("Microsoft 365 ActiveSync")
     info("Probing ActiveSync endpoint with Basic Auth...")
@@ -327,10 +406,7 @@ def check_activesync(username, password):
     }
     try:
         r = requests.options(
-            as_url,
-            auth=(username, password),
-            headers=headers,
-            timeout=20, verify=False
+            as_url, auth=(username, password), headers=headers, timeout=20, verify=False
         )
         if r.status_code == 200:
             ok("ActiveSync Authentication SUCCESS — No MFA enforced!")
@@ -347,6 +423,7 @@ def check_activesync(username, password):
 # ─────────────────────────────────────────────
 # Brute Client IDs
 # ─────────────────────────────────────────────
+
 
 def invoke_brute_client_ids(username, password, write_tokens=False):
     section("Brute Client IDs / Resource Sweep")
@@ -379,6 +456,7 @@ def invoke_brute_client_ids(username, password, write_tokens=False):
 # Summary
 # ─────────────────────────────────────────────
 
+
 def print_summary(results):
     section("Summary")
     headers = ["Service", "Result"]
@@ -388,7 +466,11 @@ def print_summary(results):
     print(f"  {'Service':<{col1}}  Result")
     print(f"  {'─'*col1}  {'─'*col2}")
     for svc, status in results:
-        color = "\033[92m" if "SUCCESS" in status else ("\033[93m" if "MFA" in status else "\033[91m")
+        color = (
+            "\033[92m"
+            if "SUCCESS" in status
+            else ("\033[93m" if "MFA" in status else "\033[91m")
+        )
         print(f"  {svc:<{col1}}  {color}{status}\033[0m")
     print()
 
@@ -396,6 +478,7 @@ def print_summary(results):
 # ─────────────────────────────────────────────
 # Main
 # ─────────────────────────────────────────────
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -407,17 +490,31 @@ Examples:
   python3 mfasweep.py --username user@domain.com --password 'Password123' --recon --include-adfs
   python3 mfasweep.py --username user@domain.com --password 'Password123' --write-tokens
   python3 mfasweep.py --username user@domain.com --password 'Password123' --brute-client-ids
-        """
+        """,
     )
-    parser.add_argument("--username",         required=True,  help="Target email address")
-    parser.add_argument("--password",         required=True,  help="Password")
-    parser.add_argument("--recon",            action="store_true", help="Perform ADFS recon")
-    parser.add_argument("--include-adfs",     action="store_true", help="Include ADFS login check")
-    parser.add_argument("--write-tokens",     action="store_true", help="Write tokens/cookies to AccessTokens.json")
-    parser.add_argument("--brute-client-ids", action="store_true", help="Brute-force resource/clientID combos")
-    parser.add_argument("--skip-portal",      action="store_true", help="Skip M365 web portal checks")
-    parser.add_argument("--skip-ews",         action="store_true", help="Skip EWS check")
-    parser.add_argument("--skip-activesync",  action="store_true", help="Skip ActiveSync check")
+    parser.add_argument("--username", required=True, help="Target email address")
+    parser.add_argument("--password", required=True, help="Password")
+    parser.add_argument("--recon", action="store_true", help="Perform ADFS recon")
+    parser.add_argument(
+        "--include-adfs", action="store_true", help="Include ADFS login check"
+    )
+    parser.add_argument(
+        "--write-tokens",
+        action="store_true",
+        help="Write tokens/cookies to AccessTokens.json",
+    )
+    parser.add_argument(
+        "--brute-client-ids",
+        action="store_true",
+        help="Brute-force resource/clientID combos",
+    )
+    parser.add_argument(
+        "--skip-portal", action="store_true", help="Skip M365 web portal checks"
+    )
+    parser.add_argument("--skip-ews", action="store_true", help="Skip EWS check")
+    parser.add_argument(
+        "--skip-activesync", action="store_true", help="Skip ActiveSync check"
+    )
 
     args = parser.parse_args()
     banner()
@@ -437,36 +534,44 @@ Examples:
     # ── Microsoft Graph API ───────────────────────
     ok_graph = check_ropc(
         "Microsoft Graph API",
-        args.username, args.password,
-        GRAPH_CLIENT_ID, GRAPH_RESOURCE,
-        write_tokens=args.write_tokens
+        args.username,
+        args.password,
+        GRAPH_CLIENT_ID,
+        GRAPH_RESOURCE,
+        write_tokens=args.write_tokens,
     )
     results.append(("Graph API", "SUCCESS - No MFA" if ok_graph else "MFA/Failed"))
 
     # ── Azure Service Management ──────────────────
     ok_azure = check_ropc(
         "Azure Service Management API",
-        args.username, args.password,
-        AZUREMGMT_CLIENT, AZUREMGMT_RESOURCE,
-        write_tokens=args.write_tokens
+        args.username,
+        args.password,
+        AZUREMGMT_CLIENT,
+        AZUREMGMT_RESOURCE,
+        write_tokens=args.write_tokens,
     )
     results.append(("Azure Mgmt API", "SUCCESS - No MFA" if ok_azure else "MFA/Failed"))
 
     # ── Teams ─────────────────────────────────────
     ok_teams = check_ropc(
         "Microsoft Teams",
-        args.username, args.password,
-        TEAMS_CLIENT, TEAMS_RESOURCE,
-        write_tokens=args.write_tokens
+        args.username,
+        args.password,
+        TEAMS_CLIENT,
+        TEAMS_RESOURCE,
+        write_tokens=args.write_tokens,
     )
     results.append(("Teams", "SUCCESS - No MFA" if ok_teams else "MFA/Failed"))
 
     # ── Office Apps ───────────────────────────────
     ok_office = check_ropc(
         "Office Apps (OneDrive/SharePoint)",
-        args.username, args.password,
-        OFFICE_CLIENT, OFFICE_RESOURCE,
-        write_tokens=args.write_tokens
+        args.username,
+        args.password,
+        OFFICE_CLIENT,
+        OFFICE_RESOURCE,
+        write_tokens=args.write_tokens,
     )
     results.append(("Office Apps", "SUCCESS - No MFA" if ok_office else "MFA/Failed"))
 
@@ -483,7 +588,7 @@ Examples:
     # ── M365 Web Portal ───────────────────────────
     if not args.skip_portal:
         check_m365_portal(args.username, args.password, write_tokens=args.write_tokens)
-        results.append(("M365 Portal (6 agents)", "See output above"))
+        results.append(("M365 Portal (7 agents)", "See output above"))
 
     # ── ADFS Login ────────────────────────────────
     if args.include_adfs:
@@ -492,7 +597,9 @@ Examples:
 
     # ── Brute Client IDs ──────────────────────────
     if args.brute_client_ids:
-        invoke_brute_client_ids(args.username, args.password, write_tokens=args.write_tokens)
+        invoke_brute_client_ids(
+            args.username, args.password, write_tokens=args.write_tokens
+        )
         results.append(("BruteClientIDs", "See output above"))
 
     # ── Summary ───────────────────────────────────
